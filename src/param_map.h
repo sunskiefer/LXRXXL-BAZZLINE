@@ -5,7 +5,7 @@
 #define UNUSED __attribute__((unused))
 
 enum { PK_SOUND, PK_GLOBAL, PK_UI, PK_BUTTON, PK_SHOW, PK_MIX };
-enum { UI_SEL, UI_NOTE, UI_TRACK };
+enum { UI_SEL, UI_NOTE, UI_TRACK, UI_SLOT };
 enum { SH_DISP1, SH_DISP2, SH_DISP3, SH_DOT1, SH_DOT2, SH_DOT3, SH_READOUT };
 
 typedef struct { uint8_t kind, id, nopts; } ParamMap;
@@ -151,6 +151,11 @@ static const ParamMap PARAM_MAP[P_COUNT] UNUSED = {
     {PK_MIX, 23, 0},   /* mix_snd8 */
     {PK_MIX, 24, 0},   /* mix_master */
     {PK_SHOW, SH_READOUT, 0},   /* readout */
+    {PK_UI, UI_SLOT, 64},   /* pr_slot */
+    {PK_BUTTON, B_PR_SOUND, 0},   /* pr_sound */
+    {PK_BUTTON, B_PR_PERF, 0},   /* pr_perf */
+    {PK_BUTTON, B_PR_SAVE, 0},   /* pr_save */
+    {PK_BUTTON, B_PR_LOAD, 0},   /* pr_load */
 };
 
 typedef struct { const char *key, *name; float def; uint8_t nopts; const char *const *opts; } SoundDef;

@@ -135,11 +135,64 @@ def window(d, rect, radius=6):
     d.rounded_rectangle([x, y, x + w - 1, y + h - 1], radius=radius, fill=WINDOW + (255,), outline=(40, 40, 40, 255), width=2)
 
 
+# circuit_clean.png (Suns Kiefer): the MODULES panel's circuit without its printing, 37 px right and 3 px up of it
+CLEAN_DX, CLEAN_DY = 37, -3
+_clean = {}
+
+
+def clean_modules():
+    """the clean circuit registered on modules_bg.png (1000 x 625) and where it covers it (a mask)"""
+    if not _clean:
+        src = art("circuit_clean.png")
+        out = Image.new("RGBA", (P.ART_W, P.ART_H), (0, 0, 0, 0))
+        out.paste(src.crop((CLEAN_DX, 0, P.ART_W, P.ART_H)), (0, -CLEAN_DY))
+        cover = np.zeros((P.ART_H, P.ART_W), bool)
+        cover[-CLEAN_DY:, :P.ART_W - CLEAN_DX] = True
+        _clean["img"], _clean["cover"] = out, cover
+    return _clean["img"], _clean["cover"]
+
+
+def clean_patch(img, rect):
+    """put the clean circuit back inside rect (artwork pixels of modules_bg.png); outside its cover: wipe()"""
+    x, y, w, h = [R(v) for v in rect]
+    c, cover = clean_modules()
+    if cover[y:y + h, x:x + w].all():
+        img.paste(c.crop((x, y, x + w, y + h)), (x, y))
+        return img
+    return wipe(img, rect)
+
+
+def circuit_texture(w, h, region=(0, 100, 963, 318)):
+    """a stretch of the clean circuit as a ground (the mixer, the readout strips)"""
+    src = art("circuit_clean.png")
+    x0, y0, x1, y1 = region
+    return src.crop((CLEAN_DX + x0, y0, CLEAN_DX + x1, y1)).resize((w, h), Image.LANCZOS)
+
+
+def relabel(img):
+    """MODULES: the sliders printed DRIVE POS and CURVE are DRIVE and SUB LVL (both selectors stay on their bars): POS
+    and CURVE wiped, SUB / LVL taken from the front panel's SUB LVL legend and set in two lines like DRIVE POS"""
+    for r in P.RELABEL_WIPE:
+        img = clean_patch(img, r)
+    front = np.asarray(art("front_bg.png").convert("L")).astype(np.float32)
+    for (sx0, sy0, sx1, sy1), (cx, top, hgt) in P.RELABEL_WORDS:
+        a = np.clip((front[sy0:sy1, sx0:sx1] - 60) / 160, 0, 1)
+        w = R((sx1 - sx0) * hgt / (sy1 - sy0))
+        word = np.zeros((sy1 - sy0, sx1 - sx0, 4), np.uint8)
+        word[..., :3] = INK
+        word[..., 3] = (a * 255).astype(np.uint8)
+        pic = Image.fromarray(word, "RGBA").resize((w, hgt), Image.LANCZOS)
+        img.alpha_composite(pic, (R(cx - w / 2), top))
+    return img
+
+
 def make_background(tab):
     pic, (cx0, cy0, cx1, cy1), sx, sy = P.PAGES[tab]
     bg_art = art(pic)
     for m in P.MASKS.get(tab, []):
-        bg_art = wipe(bg_art, m)
+        bg_art = clean_patch(bg_art, m)
+    if tab == 1:
+        bg_art = relabel(bg_art)
     if tab == 0:
         # the display window: cleared (the live characters are pictures over it)
         x, y, w, h = P.DISPLAY_BOX
@@ -165,16 +218,21 @@ def make_background(tab):
             page.alpha_composite(rl, (R(px - rl.size[0] / 2), R(py - rl.size[1] / 2)))
     if tab in P.READOUT:
         x, y, w, h = P.READOUT[tab]
-        page.alpha_composite(mixer_finish(w, h), (x, y))
+        page.alpha_composite(circuit_texture(w, h, (0, 430, 963, 470)), (x, y))
         window(d, (x + 10, y + 6, w - 20, h - 12), 8)
     if tab == 2:
         build_mixer_bg(page)
+        # the presets' legends, in the display's orange (as drawn by Suns Kiefer's mockup)
+        for key, gx, gy, txt, lx, ly in P.PRESET_KEYS:
+            label(d, (lx - 40, ly - 9, 80, 18), txt, 15, fill=LIT)
+        x, y, w, h = P.PRESET_SLOT_LABEL
+        label(d, (x, y, w, h), "SLOT", 13, fill=LIT)
     return page
 
 
 def build_mixer_bg(page):
     y0 = P.MIXER_Y
-    page.alpha_composite(mixer_finish(P.W, P.H - y0), (0, y0))
+    page.alpha_composite(circuit_texture(P.W, P.H - y0), (0, y0))
     d = ImageDraw.Draw(page)
     d.line([(0, y0), (P.W, y0)], fill=(60, 60, 60, 255), width=2)
     for i, x0 in enumerate(P.MIX_STRIPS + [P.MASTER_X]):
@@ -673,12 +731,39 @@ def build_page(sk, tab):
         selector("track", P.TRACK_SEL, ["TRACK %d" % (i + 1) for i in range(8)])
     if tab == 2:
         selector("gd_ch", P.CH_SEL, ["%2d" % (i + 1) for i in range(16)])
+        # the preset slot: the same look, page pixels
+        rect = P.PRESET_SLOT
+        texts = ["%02d" % (i + 1) for i in range(gen_params.NUM_SLOTS)]
+        f = fit_font("88", rect[2] - 14, rect[3] - 10)
+        strip = Image.new("RGB", (rect[2], rect[3] * len(texts)))
+        for i, txt in enumerate(texts):
+            strip.paste(lit_text(txt, rect[2], rect[3], f).convert("RGB"), (0, i * rect[3]))
+        name = sk.save(strip, "bz_x_sel_pr_slot.png")
+        sk.defs.append(definition("bzSel_pr_slot", KNOB_ACTIONS, [focus(rect[2], rect[3]),
+                                                                  filmstrip("Selector", name, len(texts), rect[2], rect[3])]))
+        place("bzSel_pr_slot", "pr_slot", "pr_slot", rect)
+        # the four keys: unlit glass (the front panel's), lit in the display's orange
+        unlit = round_alpha(art("front_bg.png").crop((899 - 24, 51 - 24, 899 + 24, 51 + 24)))
+        litg = recolour(art("btn_lit_small.png"), LIT)
+        dg = P.PRESET_GLASS
+        for key, gx, gy, txt, lx, ly in P.PRESET_KEYS:
+            box = dg + 10
+            rect = (gx - box // 2, gy - box // 2, box, box)
+            off = bg.crop((rect[0], rect[1], rect[0] + box, rect[1] + box)).convert("RGBA")
+            on = off.copy()
+            off.alpha_composite(unlit.resize((dg, dg), Image.LANCZOS), (5, 5))
+            on.alpha_composite(litg.resize((dg + 2, dg + 2), Image.LANCZOS), (4, 4))
+            on_n = sk.save(on, "bz_x_key_%s_on.png" % key)
+            off_n = sk.save(off, "bz_x_key_%s_off.png" % key)
+            dkey = "bzKey_%s" % key
+            sk.defs.append(definition(dkey, KEY_ACTIONS, [focus(box, box), button(on_n, off_n, 1, 1, box, box)]))
+            place(dkey, key, key, rect)
 
     # ---- the readout: MPC's text, the control last touched
     if tab in P.READOUT:
         x, y, w, h = P.READOUT[tab]
         rect = (x + 20, y + 8, w - 40, h - 16)
-        px = 58 if h > 60 else 30
+        px = 46 if h > 60 else 30
         dkey = "bzReadout_%d" % h
         sk.defs.append(definition(dkey, [], [value_label(rect[2], rect[3], px)], ignore=True))
         kids.append(placed(dkey, "readout", sk.index["readout"], rect, False))

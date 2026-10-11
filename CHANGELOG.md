@@ -12,6 +12,16 @@
   the TRACK tap only went forwards).
 - Q-Links: every parameter of every page, in reading order (top left first, row by row); 0.1.0 had only 16 per page.
 - Projects from 0.1.0 load (the mixer as it sounded then).
+- PRESETS (FX MIXER): SOUND / PERF, a SLOT (01-64), SAVE and LOAD. Sounds (one track's voice) and performances (the
+  whole instance) are files in `/sdcard/LXRXXL BAZZLINE/` (Sounds, Performances), kept across updates. SAVE and
+  LOAD PERF ask for a second tap; the readout says what happens.
+- MODULES: the two sliders printed DRIVE POS and CURVE (both already on their selector bars) are now DRIVE and SUB LVL,
+  with their labels reprinted.
+- SHIFT functions: only BACK/NOTE sets the function's value (both encoders moved before), and both encoders now step
+  both ways, one value per wheel click or Q-Link tick (they only went one way). SELECT/GATE steps one step at a time.
+- The Q-Link pages have their own names (PANEL 1, PANEL 2, MODULES 1, MODULES 2, FX, PAN SEND, LEVELS) in MPC's page
+  strip, so every one of them can be reached.
+- The clean circuit art (Suns Kiefer) fills the mixer, the readouts and the strip above the delay (no patched band).
 
 ## 0.1.0
 - First version: a variation of LXRXXL with eight bass voices built after the Erica Synths Bassline (DB-01) signal

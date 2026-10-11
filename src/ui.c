@@ -167,6 +167,7 @@ void ui_readout(Bl *x, char *buf, int n)
 {
     const int p = x->touched;
     char v[48], nm[48];
+    if (p == TOUCH_PRESET) { snprintf(buf, (size_t)n, "%s", x->pr.msg); return; }
     if (p < 0 || p >= P_COUNT) { snprintf(buf, (size_t)n, "TRACK %d", x->ui.track + 1); return; }
     {
         const ParamMap *m = &PARAM_MAP[p];
@@ -470,6 +471,7 @@ void ui_press(Bl *x, int b)
         ui_message(x, x->p.solos & (1u << (b - B_SOLO1)) ? t : "OFF", 0, 600);
         break;
     case B_TRK_NEXT: ui_press(x, B_TRK1 + (x->ui.track + 1) % NUM_TRACKS); flash(x, B_TRK_NEXT); break;
+    case B_PR_SOUND: case B_PR_PERF: case B_PR_SAVE: case B_PR_LOAD: preset_press(x, b); break;
     case B_CH_NEXT:
         x->p.g[G_GD_CH] = (float)(((int)x->p.g[G_GD_CH] + 1) % 16);
         ui_globalTouched(x, G_GD_CH);
@@ -537,6 +539,7 @@ int ui_led(Bl *x, int b)
     case B_D_REV: return x->fx.rev;
     case B_D_TAP: return x->p.dlySync != 0;
     case B_GD_ON: return x->p.gdOn;
+    case B_PR_SOUND: case B_PR_PERF: case B_PR_SAVE: case B_PR_LOAD: return preset_led(x, b);
     default:
         if (b >= B_MUTE1 && b <= B_MUTE8) return (x->p.mutes >> (b - B_MUTE1)) & 1;
         if (b >= B_SOLO1 && b <= B_SOLO8) return (x->p.solos >> (b - B_SOLO1)) & 1;
@@ -545,38 +548,59 @@ int ui_led(Bl *x, int b)
 }
 
 /* ---------------------------------------------------------------- the encoders */
+/* an encoder's new position as an index of n: MPC moves a knob by a small step from the value it read back (a wheel
+ * click 1/100, a Q-Link tick 1/128), often less than half an index, which rounding would undo (the knob then only went
+ * one way). A move that rounds back to the current index steps one index in its direction; a bigger move (a drag)
+ * lands where it points. */
+static int enc_index(float norm, int cur, int n)
+{
+    int t;
+    if (n < 2) return 0;
+    t = (int)lroundf(norm * (n - 1));
+    if (t == cur) {
+        const float at = cur / (float)(n - 1);
+        if (norm > at + 1e-4f && cur < n - 1) t = cur + 1;
+        else if (norm < at - 1e-4f && cur > 0) t = cur - 1;
+    }
+    return t < 0 ? 0 : t > n - 1 ? n - 1 : t;
+}
+
 void ui_knob(Bl *x, int which, float norm)
 {
     TrackPat *tp = bl_edit(x);
     Sound *s = &x->p.snd[x->ui.track];
     char b[16];
     norm = clampf(norm, 0, 1);
-    switch (x->ui.mode) {
-    case MD_PLAYMODE: tp->playMode = (uint8_t)lroundf(norm * (PM_COUNT - 1)); mode_text(x, b); ui_message(x, b, 0, 1200); break;
-    case MD_TRANSP: tp->transp = (int8_t)(lroundf(norm * 48.f) - 24); mode_text(x, b); ui_message(x, b, 0, 1200); break;
-    case MD_SCALE: tp->scale = (uint8_t)lroundf(norm * (NUM_SCALES - 1)); mode_text(x, b); ui_message(x, b, 0, 1200); break;
-    case MD_ARP: tp->arp = (uint8_t)lroundf(norm * (ARP_COUNT - 1)); mode_text(x, b); ui_message(x, b, 0, 1200); break;
-    case MD_LAST: tp->len = (uint8_t)(1 + lroundf(norm * 63.f)); mode_text(x, b); ui_message(x, b, 0, 1200); break;
+    /* in a function, BACK/NOTE sets its value; SELECT/GATE stays the step knob (in LFO it picks the wave) */
+    switch (which == 1 || x->ui.mode == MD_LFO ? x->ui.mode : MD_NORMAL) {
+    case MD_PLAYMODE: tp->playMode = (uint8_t)enc_index(norm, tp->playMode, PM_COUNT); mode_text(x, b); ui_message(x, b, 0, 1200); break;
+    case MD_TRANSP: tp->transp = (int8_t)(enc_index(norm, tp->transp + 24, 49) - 24); mode_text(x, b); ui_message(x, b, 0, 1200); break;
+    case MD_SCALE: tp->scale = (uint8_t)enc_index(norm, tp->scale, NUM_SCALES); mode_text(x, b); ui_message(x, b, 0, 1200); break;
+    case MD_ARP: tp->arp = (uint8_t)enc_index(norm, tp->arp, ARP_COUNT); mode_text(x, b); ui_message(x, b, 0, 1200); break;
+    case MD_LAST: tp->len = (uint8_t)(1 + enc_index(norm, tp->len - 1, 64)); mode_text(x, b); ui_message(x, b, 0, 1200); break;
     case MD_LFO:
-        if (which == 0) { s->v[SP_MOD_WAVE] = (float)lroundf(norm * 4.f); ui_soundTouched(x, SP_MOD_WAVE); }
-        else { s->v[SP_MOD_DEST] = (float)lroundf(norm * 3.f); ui_soundTouched(x, SP_MOD_DEST); }
+        if (which == 0) { s->v[SP_MOD_WAVE] = (float)enc_index(norm, (int)s->v[SP_MOD_WAVE], 5); ui_soundTouched(x, SP_MOD_WAVE); }
+        else { s->v[SP_MOD_DEST] = (float)enc_index(norm, (int)s->v[SP_MOD_DEST], 4); ui_soundTouched(x, SP_MOD_DEST); }
         break;
-    case MD_BANK: x->ui.bank = (uint8_t)lroundf(norm * (NUM_BANKS - 1)); mode_text(x, b); ui_message(x, b, 0, 1200); break;
-    case MD_PATTERN:
-        seq_queuePattern(x, (uint8_t)(x->ui.bank * 16 + lroundf(norm * 15.f)));
+    case MD_BANK: x->ui.bank = (uint8_t)enc_index(norm, x->ui.bank, NUM_BANKS); mode_text(x, b); ui_message(x, b, 0, 1200); break;
+    case MD_PATTERN: {
+        const int cur = x->nextPat != 0xff && x->nextPat / 16 == x->ui.bank ? x->nextPat % 16 : x->patSlot % 16;
+        seq_queuePattern(x, (uint8_t)(x->ui.bank * 16 + enc_index(norm, cur, 16)));
         mode_text(x, b);
         ui_message(x, b, 0, 1200);
         break;
+    }
     default:
         if (which == 0) {   /* SELECT/GATE: the step */
             const int len = track_len(x);
-            x->ui.sel = (uint8_t)lroundf(norm * (len - 1));
+            x->ui.sel = (uint8_t)enc_index(norm, x->ui.sel < len ? x->ui.sel : len - 1, len);
             x->ui.bar = (uint8_t)(x->ui.sel / 16);
             snprintf(b, sizeof b, "S%d", x->ui.sel + 1);
             ui_message(x, b, 0, 1200);
         } else {            /* BACK/NOTE: the selected step's note, C0..C6 (the step plays) */
             Step *st = &tp->s[x->ui.sel];
-            st->note = (uint8_t)(24 + lroundf(norm * 72.f));
+            const int cur = st->note < 24 ? 0 : st->note > 96 ? 72 : st->note - 24;
+            st->note = (uint8_t)(24 + enc_index(norm, cur, 73));
             st->f |= ST_GATE;
             note_name(st->note, b);
             ui_message(x, b, 0, 1200);
@@ -590,7 +614,7 @@ float ui_knobGet(Bl *x, int which)
 {
     const TrackPat *tp = bl_edit(x);
     const Sound *s = &x->p.snd[x->ui.track];
-    switch (x->ui.mode) {
+    switch (which == 1 || x->ui.mode == MD_LFO ? x->ui.mode : MD_NORMAL) {
     case MD_PLAYMODE: return tp->playMode / (float)(PM_COUNT - 1);
     case MD_TRANSP: return (tp->transp + 24) / 48.f;
     case MD_SCALE: return tp->scale / (float)(NUM_SCALES - 1);
@@ -598,7 +622,7 @@ float ui_knobGet(Bl *x, int which)
     case MD_LAST: return (tp->len - 1) / 63.f;
     case MD_LFO: return which == 0 ? s->v[SP_MOD_WAVE] / 4.f : s->v[SP_MOD_DEST] / 3.f;
     case MD_BANK: return x->ui.bank / (float)(NUM_BANKS - 1);
-    case MD_PATTERN: return (x->patSlot % 16) / 15.f;
+    case MD_PATTERN: return (x->nextPat != 0xff && x->nextPat / 16 == x->ui.bank ? x->nextPat % 16 : x->patSlot % 16) / 15.f;
     default:
         if (which == 0) { const int len = track_len(x); return len > 1 ? x->ui.sel / (float)(len - 1) : 0.f; }
         return clampf((tp->s[x->ui.sel].note - 24) / 72.f, 0, 1);

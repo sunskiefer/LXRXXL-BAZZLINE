@@ -59,6 +59,7 @@ void bl_init(Bl *x)
     x->touched = -1;
     bl_factory(x);
     ui_init(x);
+    preset_init(x);
 }
 
 /* ---------------------------------------------------------------- audio */

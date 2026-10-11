@@ -7,7 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "engine.h"
+#include "plugin_dir.h"
 #include "bl.h"
 #include "param_ids.h"
 #include "param_map.h"
@@ -18,11 +20,35 @@ typedef struct {
     uint8_t shownDots;
 } Inst;
 
+/* the data folder (presets): MODULE_DIR, outside the plugin folder so presets survive updates; else beside the .so */
+static int writable_dir(const char *d)
+{
+    char probe[700], tmp[600];
+    char *p;
+    FILE *f;
+    snprintf(tmp, sizeof tmp, "%s", d);
+    for (p = tmp + 1; *p; p++) if (*p == '/') { *p = 0; mkdir(tmp, 0755); *p = '/'; }
+    mkdir(tmp, 0755);
+    snprintf(probe, sizeof probe, "%s/.probe", d);
+    f = fopen(probe, "w");
+    if (!f) return 0;
+    fclose(f);
+    remove(probe);
+    return 1;
+}
+
 static void *create(const char *dataDir)
 {
     Inst *in = calloc(1, sizeof *in);
     if (!in) return NULL;
-    if (dataDir) snprintf(in->x.dataDir, sizeof in->x.dataDir, "%s", dataDir);
+    if (dataDir && dataDir[0] && writable_dir(dataDir)) snprintf(in->x.dataDir, sizeof in->x.dataDir, "%s", dataDir);
+    else {
+        char here[400];
+        if (mpc_plugin_dir(here, sizeof here)) {
+            snprintf(in->x.dataDir, sizeof in->x.dataDir, "%s/LXRXXL BAZZLINE Data", here);
+            if (!writable_dir(in->x.dataDir)) in->x.dataDir[0] = 0;
+        }
+    }
     bl_init(&in->x);
     if (!in->x.fx.buf[0] || !in->x.fx.buf[1]) { fx_free(&in->x.fx); free(in); return NULL; }
     return in;
@@ -31,6 +57,7 @@ static void *create(const char *dataDir)
 static void destroy(void *p)
 {
     Inst *in = p;
+    preset_forget(&in->x);
     fx_free(&in->x.fx);
     free(in);
 }
@@ -76,7 +103,7 @@ static float read_value(const ParamMap *m, const char *v)
 static int m_kind_editable(int i)
 {
     const int k = PARAM_MAP[i].kind;
-    return k == PK_SOUND || k == PK_GLOBAL || k == PK_MIX || (k == PK_UI && PARAM_MAP[i].id != UI_TRACK);
+    return k == PK_SOUND || k == PK_GLOBAL || k == PK_MIX || (k == PK_UI && PARAM_MAP[i].id != UI_TRACK && PARAM_MAP[i].id != UI_SLOT);
 }
 
 static void set_param(void *p, const char *k, const char *v)
@@ -106,6 +133,7 @@ static void set_param(void *p, const char *k, const char *v)
             break;
         case PK_UI:
             if (m->id == UI_TRACK) ui_press(x, B_TRK1 + (int)read_value(m, v));
+            else if (m->id == UI_SLOT) preset_slot(x, (int)read_value(m, v));
             else ui_knob(x, m->id == UI_SEL ? 0 : 1, (float)atof(v));
             break;
         case PK_MIX: {
@@ -174,6 +202,7 @@ static int get_param(void *p, const char *k, char *buf, int n)
         case PK_UI:
             if (on) return 0;
             if (m->id == UI_TRACK) snprintf(t, sizeof t, "%d", x->ui.track);
+            else if (m->id == UI_SLOT) snprintf(t, sizeof t, "%d", x->pr.slot);
             else snprintf(t, sizeof t, "%.5f", ui_knobGet(x, m->id == UI_SEL ? 0 : 1));
             return put(buf, n, t);
         case PK_MIX: {
@@ -216,6 +245,7 @@ static void render(void *p, int16_t *out, int frames)
     char d[4];
     uint8_t dots;
     if (frames > 128) frames = 128;
+    preset_poll(&in->x);
     bl_render(&in->x, L, R, frames);
     /* the display changed by itself (a message ran out, the tempo moved): report it */
     ui_display(&in->x, d, &dots);

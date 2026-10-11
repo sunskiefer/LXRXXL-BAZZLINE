@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "engine.h"
 #include "bl.h"
 #include "param_ids.h"
@@ -292,6 +294,66 @@ int main(int argc, char **argv)
                   "a 0.1.0 project loads (master %f)", ((Bl *)in2)->p.master);
             E->destroy(in2);
         }
+    }
+
+    /* ---- presets: a sound and a performance saved to the storage and loaded back */
+    {
+        char dir[256], path[400], b[128] = "";
+        struct stat st;
+        void *ip;
+        Bl *y;
+        double q = 0;
+        int w;
+        snprintf(dir, sizeof dir, "/tmp/bz_presets_%d", (int)getpid());
+        ip = E->create(dir);
+        y = (Bl *)ip;
+        CHECK(!strcmp(y->dataDir, dir), "the preset folder is the data folder ('%s')", y->dataDir);
+        set(ip, "trk3", "1");
+        setf(ip, "cutoff", 0.123f);
+        set(ip, "pr_sound", "1");
+        set(ip, "pr_slot", "4");
+        set(ip, "pr_load", "1");
+        E->get_param(ip, "readout", b, sizeof b);
+        CHECK(strstr(b, "SOUND 05") && strstr(b, "EMPTY"), "an empty slot says so ('%s')", b);
+        set(ip, "pr_save", "1");
+        E->get_param(ip, "readout", b, sizeof b);
+        CHECK(strstr(b, "TAP SAVE AGAIN") != NULL, "SAVE asks for a second tap ('%s')", b);
+        set(ip, "pr_save", "1");
+        snprintf(path, sizeof path, "%s/Sounds/SOUND 05.bzsound", dir);
+        for (w = 0; w < 200 && stat(path, &st) != 0; w++) usleep(10000);
+        CHECK(stat(path, &st) == 0 && st.st_size > 100, "SOUND 05 written (%s)", path);
+        setf(ip, "cutoff", 0.9f);
+        set(ip, "trk5", "1");
+        set(ip, "pr_load", "1");   /* a sound loads at once, onto the selected track (5) */
+        for (w = 0; w < 200 && y->pr.loading; w++) { play(ip, &q, 120, 0.01, 0, &rms, NULL); usleep(5000); }
+        CHECK(fabsf(y->p.snd[4].v[SP_CUTOFF] - 0.123f) < 1e-4f, "SOUND 05 loaded on track 5 (cutoff %f)", y->p.snd[4].v[SP_CUTOFF]);
+        CHECK(fabsf(y->p.snd[2].v[SP_CUTOFF] - 0.9f) < 1e-4f, "track 3 untouched (%f)", y->p.snd[2].v[SP_CUTOFF]);
+        E->get_param(ip, "readout", b, sizeof b);
+        CHECK(strstr(b, "LOADED SOUND 05 ON T5") != NULL, "the readout: '%s'", b);
+        /* a performance: everything */
+        set(ip, "pr_perf", "1");
+        set(ip, "pr_slot", "0");
+        setf(ip, "mix_master", 0.33f);
+        set(ip, "pr_save", "1"); set(ip, "pr_save", "1");
+        snprintf(path, sizeof path, "%s/Performances/PERF 01.bzperf", dir);
+        for (w = 0; w < 200 && stat(path, &st) != 0; w++) usleep(10000);
+        CHECK(stat(path, &st) == 0 && st.st_size > 1000, "PERF 01 written");
+        setf(ip, "mix_master", 0.7f);
+        y->p.snd[4].v[SP_CUTOFF] = 0.5f;
+        set(ip, "pr_load", "1");
+        CHECK(y->pr.armed == PR_LOAD && !y->pr.loading, "LOAD PERF asks for a second tap");
+        set(ip, "pr_load", "1");
+        for (w = 0; w < 200 && y->pr.loading; w++) { play(ip, &q, 120, 0.01, 0, &rms, NULL); usleep(5000); }
+        CHECK(fabsf(y->p.master - 0.33f) < 1e-4f && fabsf(y->p.snd[4].v[SP_CUTOFF] - 0.123f) < 1e-4f,
+              "PERF 01 loaded (master %f, T5 cutoff %f)", y->p.master, y->p.snd[4].v[SP_CUTOFF]);
+        E->get_param(ip, "pr_sound_on", b, sizeof b);
+        CHECK(atof(b) == 0, "PERF lit, SOUND not");
+        /* a load still in flight when the instance goes away */
+        set(ip, "pr_load", "1"); set(ip, "pr_load", "1");
+        E->destroy(ip);
+        usleep(100000);
+        snprintf(path, sizeof path, "rm -rf '%s'", dir);
+        if (system(path)) {}
     }
 
     E->destroy(in);

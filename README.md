@@ -41,7 +41,7 @@ track and its value (`T3   CUTOFF   75`, `DELAY TIME   400 ms`, `T5   PAN   L 20
 
 | Control | What it does |
 |---|---|
-| DRIVE | the overdrive, before or after the filter (MODULES: DRIVE POS) |
+| DRIVE | the overdrive, before or after the filter (MODULES: DRIVE, and the POSITION selector) |
 | DETUNE | the swarm's spread: BBD detune or unison (MODULES: SWARM) |
 | VCA ENV | the amp envelope's decay. Fully down: the VCA follows the gate (organ-like) |
 | VCF ENV / RESONANCE / CUTOFF | the filter envelope's amount, the resonance (self-oscillates at the top), the cutoff |
@@ -51,7 +51,7 @@ track and its value (`T3   CUTOFF   75`, `DELAY TIME   400 ms`, `T5   PAN   L 20
 | LFO RATE / LFO LVL | the modulator's rate and depth (wave, destination and sync: MODULES) |
 | ENV/CV LVL | the pitch envelope's amount (up to +4 octaves at the top: kick-basses, 808s) |
 | SELECT/GATE | walks the steps of the selected track (the display shows `S 1`..`S64`) |
-| BACK/NOTE | the selected step's note, C0..C6 (it turns the step on); in a function, that function's value |
+| BACK/NOTE | the selected step's note, C0..C6 (it turns the step on); in a function, that function's value (SELECT/GATE stays the step knob, except in LFO, where it picks the wave) |
 | DELAY: DRY/WET, TIME | the delay's mix and time (the same as on FX MIXER) |
 | RELEASE, GATE / DUCK | the gate/duck's release and mode (the same as on FX MIXER) |
 | The display | the tempo (its last dot lit: MPC's tempo), a value while you turn it, the function in use |
@@ -88,7 +88,7 @@ SHIFT again leaves a function. The display shows what is in use (`ACC`, `SLD`, `
 | Section | Controls |
 |---|---|
 | OSC | MODE (VCO / FM / WAVE: tap the label or the slider), FM RATIO (1/4 .. 8), WAVE POS (WAVE mode: sine → triangle → saw → square) |
-| DRIVE | POS (PRE / POST the filter), CURVE (SOFT / HARD / FOLD), TONE (after the drive) |
+| DRIVE | the sliders DRIVE (the amount, = PANEL's DRIVE) and SUB LVL (the sub oscillator, = PANEL's SUB LVL), TONE (after the drive); under them, POSITION (PRE / POST the filter: tap it or its slider) and CURVE (SOFT / HARD / FOLD) |
 | ACCENT | AMOUNT (level and filter push of an accented step), SWEEP (accents in a row push the filter further, the 303's accent sweep), SLIDE TIME |
 | ENVELOPE | VCF ATK, VCF DEC, VCA ATK, VCA DEC (= VCA ENV), PITCH AMT (= ENV/CV LVL), PITCH DEC |
 | VCA/TRACK | LEVEL, PAN |
@@ -105,6 +105,7 @@ SHIFT again leaves a function. The display shows what is in use (`ACC`, `SLD`, `
 | GATE/DUCK | MODE (GATE / DUCK), DEPTH, HOLD, ATTACK, RELEASE, MIDI CH (the number: the wheel, a Q-Link or a drag, both ways), ON/OFF |
 | MIXER, tracks 1-8 | PAN, DLY SEND (how much of the track goes into the delay), LEVEL (the slider), MUTE, SOLO |
 | MASTER | the level of the whole instance |
+| PRESETS | SLOT, SOUND, PERF, SAVE, LOAD: see [Presets](#presets-saving-and-loading) |
 
 - The mixer's LEVEL and PAN are the tracks' own LEVEL and PAN (MODULES shows the selected track's).
 - MUTE here is the same mute as the panel's MUTE key.
@@ -137,21 +138,66 @@ There is no threshold: a MIDI trigger is always on.
 
 ### Q-Links
 
-Every parameter of a page is on its Q-Links, in reading order: from the top left, row by row, left to right. A page
-with more than 16 parameters has more than one Q-Link page, as listed here. On the Force, bank 1 is the first 8
-and bank 2 the next 8.
+Every parameter of every page is on the Q-Links, in reading order: from the top left, row by row, left to right. A
+page with more than 16 parameters has more than one Q-Link page, each with its own name in MPC's page strip under
+the plugin (PANEL 1, PANEL 2, MODULES 1, MODULES 2, FX, PAN SEND, LEVELS): pick one there and the Q-Links follow it.
+The screen is the same for a page's Q-Link pages. On the Force, bank 1 is the first 8 of the list and bank 2 the next
+8.
 
 | Page | Q-Links |
 |---|---|
-| PANEL 1 | DRY/WET, DELAY TIME, RELEASE, GATE/DUCK, DRIVE, DETUNE, VCA ENV, WAVE, FILTER, VCF ENV, RESONANCE, CUTOFF |
-| PANEL 2 | FM LVL, SUB LVL, NOISE LVL, SELECT/GATE, BACK/NOTE, LFO RATE, LFO LVL, ENV/CV LVL |
-| MODULES 1 | TRACK, OSC MODE, FM RATIO, WAVE POS, DRIVE POS, CURVE, TONE, ACCENT, SWEEP, SLIDE TIME, VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC |
-| MODULES 2 | LEVEL, PAN, FILTER MODEL, KEY TRACK, SWARM RATE, SWARM MODE, DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
-| FX MIXER 1 | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, GATE/DUCK, DEPTH, HOLD, ATTACK, RELEASE, DELAY MODE, DUCK MIDI CH |
-| FX MIXER 2 | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8, DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
-| FX MIXER 3 | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8, MASTER |
+| PANEL: **PANEL 1** | DRY/WET, DELAY TIME, RELEASE, GATE/DUCK, DRIVE, DETUNE, VCA ENV, WAVE, FILTER, VCF ENV, RESONANCE, CUTOFF |
+| PANEL: **PANEL 2** | FM LVL, SUB LVL, NOISE LVL, SELECT/GATE, BACK/NOTE, LFO RATE, LFO LVL, ENV/CV LVL |
+| MODULES: **MODULES 1** | TRACK, OSC MODE, FM RATIO, WAVE POS, DRIVE, SUB LVL, TONE, ACCENT, SWEEP, SLIDE TIME, VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC |
+| MODULES: **MODULES 2** | LEVEL, PAN, DRIVE POS, CURVE, FILTER MODEL, KEY TRACK, SWARM RATE, SWARM MODE, DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
+| FX MIXER: **FX** | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, PRESET SLOT, GATE/DUCK, DEPTH, HOLD, ATTACK, RELEASE, DELAY MODE, DUCK MIDI CH |
+| FX MIXER: **PAN SEND** | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8, DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
+| FX MIXER: **LEVELS** | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8, MASTER |
 
-The keys (step keys, TRACK 1-8, MUTE/SOLO...) are pressed, not turned, so they are not on Q-Links.
+The keys (step keys, TRACK 1-8, MUTE/SOLO, SAVE/LOAD...) are pressed, not turned, so they are not on Q-Links.
+
+### Presets: saving and loading
+
+Four keys and a slot number on **FX MIXER**, top middle: **SLOT**, **SOUND**, **PERF**, **SAVE**, **LOAD**. The
+big readout under them tells you what is happening at every step.
+
+- **A SOUND** is one track's voice: every knob, slider and selector of PANEL and MODULES for that track, its LEVEL
+  and PAN included (not its steps, not its DLY SEND, MUTE or SOLO). It is saved from, and loaded onto, the **selected track**.
+- **A PERF** (performance) is everything: the eight sounds, the 64 patterns, the delay, the gate/duck, the mixer
+  (levels, pans, sends, mutes, solos, master), the links and the tempo.
+- **64 slots** of each. The slot number is the orange **SLOT** display: turn it with the data wheel or a Q-Link (it is
+  on the FX Q-Link page), or drag it up or down.
+
+**To save a sound:**
+1. Select the track (TRACK 1-8 on PANEL, or TRACK on MODULES).
+2. On FX MIXER, tap **SOUND** (it lights).
+3. Pick a **SLOT**. The readout says `SOUND 05   EMPTY   (T1)`, or `SOUND 05   (T1)` when the slot is used (T1: the
+   selected track).
+4. Tap **SAVE**. The readout asks `SAVE T1 AS SOUND 05?  TAP SAVE AGAIN` (or `OVERWRITE SOUND 05 ...` when the slot
+   is used) and SAVE blinks.
+5. Tap **SAVE** again within 6 seconds: `SAVED T1 AS SOUND 05`. Anything else (another slot, SOUND/PERF, waiting)
+   cancels.
+
+**To load a sound:** select the track, tap **SOUND**, pick the **SLOT**, tap **LOAD**: `LOADED SOUND 05 ON T1`. It
+loads at once, so you can step through the slots and tap LOAD on each to audition them. An empty slot says `EMPTY`
+and changes nothing.
+
+**To save a performance:** tap **PERF**, pick the **SLOT**, tap **SAVE**, then **SAVE** again (as for a sound).
+
+**To load a performance:** tap **PERF**, pick the **SLOT**, tap **LOAD**: the readout warns
+`LOAD PERF 05?  IT REPLACES EVERYTHING.  TAP LOAD AGAIN`; tap **LOAD** again. Save first anything you want to keep.
+
+**Where the files are:** on the device, in `/sdcard/LXRXXL BAZZLINE/` (outside the plugin's folder, so updating or
+reinstalling the plugin keeps them):
+- `Sounds/SOUND 01.bzsound` .. `SOUND 64.bzsound`: plain text, one `key=value` line per control;
+- `Performances/PERF 01.bzperf` .. `PERF 64.bzperf`: the same text MPC's own project keeps for the instance.
+
+You can copy, back up or share these files (over SSH, or with the SD card / drive in a computer) and drop them into
+another device's folder: they appear in the slot their number says. Rename a file to move it to another slot. If
+`/sdcard/LXRXXL BAZZLINE` cannot be written, the plugin uses `LXRXXL BAZZLINE Data` inside its own folder instead.
+
+MPC's own project still saves and restores the whole instance as before: presets are for moving sounds and
+performances between projects and devices.
 
 ### Playing it
 
@@ -163,7 +209,8 @@ The keys (step keys, TRACK 1-8, MUTE/SOLO...) are pressed, not turned, so they a
 - **Patterns:** 64 (A01..D16), each with 8 tracks of up to 64 steps. The factory project has six demo patterns:
   A1 acid + sub, A2 DB-01 style, A3 Reese, A4 808 + pluck, A5 FM growl, A6 wavetable. Each track has its own
   factory sound: 1 ACID, 2 DB-01, 3 REESE, 4 SUB, 5 FM GROWL, 6 808, 7 PLUCK, 8 WAVE.
-- MPC's project saves the whole instance (sounds, patterns, delay, gate/duck, tempo).
+- MPC's project saves the whole instance (sounds, patterns, delay, gate/duck, mixer, tempo). Sounds and performances
+  can also be saved to the device's storage: [Presets](#presets-saving-and-loading).
 
 ## How the voices were designed
 
@@ -258,7 +305,9 @@ Offline, every build (`test/run_tests.sh`, and in CI):
   - the state round-trip;
   - MIDI notes, and the duck on channel 10;
   - the delay held, reversed, tape and digital, and self-oscillating but bounded;
-  - the mixer: mutes, solo, MASTER, DLY SEND, LEVEL, the readout, and a 0.1.0 project still loading.
+  - the mixer: mutes, solo, MASTER, DLY SEND, LEVEL, the readout, and a 0.1.0 project still loading;
+  - presets: a sound saved and loaded onto another track, a performance saved and loaded, the second taps, an empty
+    slot, and a load still in flight when the instance is removed.
 - **The MPC simulation** (through the VST2 wrapper only, also built for ARM and run under qemu):
   - the display reads MPC's tempo;
   - MPC's play and the panel's PLAY;
@@ -266,6 +315,8 @@ Offline, every build (`test/run_tests.sh`, and in CI):
   - TRACK 2 shows its sound;
   - the TRACK selector and the duck's MIDI CH step both ways (the data wheel and a Q-Link, as MPC sends them);
   - the mixer's LEVEL is the track's LEVEL, and the readout names it;
+  - SHIFT + PLAY MODE: BACK/NOTE steps the mode both ways one at a time and SELECT/GATE stays put; SELECT/GATE steps
+    one step at a time both ways;
   - steps from the step keys play;
   - SHIFT + ACC;
   - the duck;

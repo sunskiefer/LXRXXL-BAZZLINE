@@ -178,9 +178,22 @@ typedef struct Bl {
     uint32_t clock;                  /* frames since the instance started */
     uint32_t displayRev;
     uint32_t rnd;                    /* the RND PATT generator */
-    int16_t touched;                 /* the plugin parameter last edited (the readout), -1 none */
+    int16_t touched;                 /* the plugin parameter last edited (the readout), -1 none, TOUCH_PRESET */
     char dataDir[512];
+
+    struct {                         /* presets on the device's storage (preset.c) */
+        uint32_t id;                 /* this instance (loads finished on a worker find it by this) */
+        uint8_t kind;                /* PR_SOUND / PR_PERF */
+        uint8_t slot;                /* 0..NUM_SLOTS-1 */
+        uint8_t armed;               /* PR_SAVE / PR_LOAD: waiting for the second tap */
+        uint8_t loading;             /* loads in flight */
+        uint32_t armUntil;
+        char msg[96];                /* the readout's line */
+    } pr;
 } Bl;
+enum { PR_SOUND, PR_PERF };
+enum { PR_NONE, PR_SAVE, PR_LOAD };
+#define TOUCH_PRESET (-2)
 
 /* bl.c */
 void bl_init(Bl *x);
@@ -234,6 +247,14 @@ void ui_display(Bl *x, char out[4], uint8_t *dots);   /* what the display shows 
 void ui_midiNote(Bl *x, uint8_t ch, uint8_t note, uint8_t vel);
 void ui_readout(Bl *x, char *buf, int n);
 void ui_touch(Bl *x, int param);              /* a parameter was edited: the readout shows it */     /* the readout: the last edited parameter, its name and value */
+
+/* preset.c */
+void preset_init(Bl *x);
+void preset_forget(Bl *x);
+void preset_poll(Bl *x);                      /* at each audio block: a finished load comes in */
+void preset_press(Bl *x, int b);              /* B_PR_SOUND / PERF / SAVE / LOAD */
+void preset_slot(Bl *x, int slot);
+int preset_led(Bl *x, int b);
 
 /* store.c */
 char *store_serialize(Bl *x, int *len);

@@ -35,9 +35,10 @@ def main(skin, out, tab, sets):
             continue
         vals[i] = (float(v), vals[i][1])
     defs = {d["key"]: d["value"] for d in tui["componentDefinitions"]["localComponentDefinitions"]}
-    names = []
+    names, seen = [], set()
     for t in tui["tabs"]:   # a tab's Q-Link sub-pages share its page
-        if t["componentName"] not in names:
+        if t["fnKeyIndex"] not in seen:
+            seen.add(t["fnKeyIndex"])
             names.append(t["componentName"])
     page = defs[names[tab]]
     img = Image.new("RGBA", (1280, 628), (0, 0, 0, 255))

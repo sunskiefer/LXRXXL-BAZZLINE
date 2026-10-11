@@ -82,10 +82,15 @@ KNOB_MAX = 126      # page px: a knob's 128-frame filmstrip stays under MPC's 16
 # the dark channel printed on the panel; the thumb runs along it, the top is the maximum (an option list: the first
 # option at the top)
 VSLIDERS = [("osc_mode", 60, 48, 197), ("fm_ratio", 118, 48, 197), ("wave_pos", 175, 48, 197),
-            ("drive_pos", 246, 48, 197), ("curve", 305, 48, 197), ("tone", 360, 48, 197),
+            ("drive", 246, 48, 197), ("sub_lvl", 305, 48, 197), ("tone", 360, 48, 197),
             ("vcf_atk", 566, 44, 193), ("vcf_dec", 624, 44, 193), ("vca_atk", 681, 44, 193),
             ("vca_env", 738, 44, 193), ("env_cv", 797, 44, 193), ("pitch_dec", 854, 44, 193),
             ("level", 912, 44, 193), ("pan", 970, 44, 193)]
+# the two sliders printed as DRIVE POS and CURVE (both are on the selector bars below) are DRIVE and SUB LVL: their
+# labels are reprinted (tools/panel_art.py RELABEL)
+RELABEL_WIPE = [(228, 225, 42, 13), (282, 214, 52, 15)]               # POS, CURVE (artwork pixels)
+RELABEL_WORDS = [((160, 436, 193, 447), (305, 217, 8)),                # SUB (front_bg.png's SUB LVL): centre x, top, height
+                 ((193, 436, 224, 447), (305, 227, 8))]                # LVL
 # the option sliders under the selector bars: key -> channel (x0, y, x1); the first option at the left
 HSLIDERS = [("drive_pos", 86, 324.5, 151), ("curve", 74, 384, 169), ("fmodel", 310, 334.5, 375),
             ("sw_mode", 546, 333.5, 611), ("mod_wave", 749, 321, 910), ("mod_dest", 754, 392, 915)]
@@ -133,6 +138,14 @@ DISPLAY_BOX = (420, 289, 160, 70)                       # the window repainted u
 TRACK_SEL = (1, 388, 3, 160, 31)                         # MODULES: "TRACK n" (art rect)
 CH_SEL = (2, 661, 585, 40, 34)                             # FX MIXER: the duck's MIDI channel
 
+# ---------------------------------------------------------------- presets (FX MIXER, page pixels)
+# the slot number (the display's font) with its label, and the four keys: glass centre, label centre
+PRESET_SLOT = (622, 26, 86, 42)
+PRESET_SLOT_LABEL = (622, 6, 86, 16)
+PRESET_KEYS = [("pr_sound", 753, 47, "SOUND", 753, 17), ("pr_perf", 817, 70, "PERF", 817, 40),
+               ("pr_save", 873, 47, "SAVE", 873, 17), ("pr_load", 928, 70, "LOAD", 928, 40)]
+PRESET_GLASS = 34
+
 # ---------------------------------------------------------------- the mixer (FX MIXER, page pixels)
 STRIP_W = 134
 MIX_STRIPS = [8 + i * STRIP_W for i in range(8)]          # each strip's left edge
@@ -171,6 +184,8 @@ def controls(tab):
     if tab == 2:
         t, x, y, w, h = CH_SEL
         out.append(("gd_ch",) + page(tab, x + w / 2, y + h / 2))
+        x, y, w, h = PRESET_SLOT
+        out.append(("pr_slot", x + w / 2, y + h / 2))
     seen, uniq = set(), []
     for c in out:
         if c[0] not in seen:
@@ -200,12 +215,12 @@ def rows_of(items, row_gap):
 
 # MODULES, as the artwork reads (its tall sliders and the ACCENT column make one row, then the selectors under them)
 MODULES_ROWS = [["track"],
-                ["osc_mode", "fm_ratio", "wave_pos", "drive_pos", "curve", "tone", "acc_amt", "acc_sweep", "slide_time",
+                ["osc_mode", "fm_ratio", "wave_pos", "drive", "sub_lvl", "tone", "acc_amt", "acc_sweep", "slide_time",
                  "vcf_atk", "vcf_dec", "vca_atk", "vca_env", "env_cv", "pitch_dec", "level", "pan"],
-                ["fmodel", "keytrack", "sw_rate", "sw_mode", "detune", "sw_mix", "mod_wave", "mod_dest", "mod_sync"]]
+                ["drive_pos", "curve", "fmodel", "keytrack", "sw_rate", "sw_mode", "detune", "sw_mix", "mod_wave", "mod_dest", "mod_sync"]]
 
 # FX MIXER's top: the delay's row (TIME's label is on it) then the duck's knobs, then the bottom switches
-FX_ROWS = [["dly_time", "dly_in", "dly_fb", "dly_wet", "gd_mode"], ["gd_depth", "gd_hold", "gd_atk", "gd_rel"],
+FX_ROWS = [["dly_time", "dly_in", "dly_fb", "dly_wet", "pr_slot", "gd_mode"], ["gd_depth", "gd_hold", "gd_atk", "gd_rel"],
            ["dly_mode", "gd_ch"]]
 
 
@@ -226,9 +241,12 @@ def qlink_pages(tab):
     """the Q-Link sub-pages of a tab: lists of up to 16 keys (two banks of 8 on a Force), top-left first"""
     rows = {1: MODULES_ROWS, 2: FX_ROWS}.get(tab) or rows_of(controls(tab), ROW_GAP[tab])
     if tab == 2:   # the mixer, row by row: PAN 1-8 + DLY SEND 1-8, then LEVEL 1-8 + MASTER
-        rows += [["mix_pan%d" % i for i in range(1, 9)] + ["mix_snd%d" % i for i in range(1, 9)],
+        rows = rows + [["mix_pan%d" % i for i in range(1, 9)] + ["mix_snd%d" % i for i in range(1, 9)],
                  ["mix_lvl%d" % i for i in range(1, 9)] + ["mix_master"]]
     return pack(rows)
+
+
+QLINK_NAMES = [["PANEL 1", "PANEL 2"], ["MODULES 1", "MODULES 2"], ["FX", "PAN SEND", "LEVELS"]]
 
 
 def layout_lines():
@@ -243,8 +261,8 @@ def layout_lines():
         qp = qlink_pages(t)
         for i, key in enumerate(k for p in qp for k in p):   # placeholders: a small grid (panel_art.py replaces them)
             L.append('knob cx=%d cy=%d r=12 label="" key=%s ns=0 bw=30' % (24 + 34 * (i % 36), Y0 + 24 + 40 * (i // 36), key))
-        for p in qp:
-            L.append('qlinks "%s" = %s' % (name, ",".join(p)))
+        for i, p in enumerate(qp):   # each Q-Link page its own short name (MPC's page strip shows them)
+            L.append('qlinks "%s" = %s' % (QLINK_NAMES[t][i], ",".join(p)))
         L.append("")
     return L
 

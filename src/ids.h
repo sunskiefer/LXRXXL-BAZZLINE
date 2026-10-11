@@ -113,7 +113,12 @@ enum {
     B_SOLO6 = 55,
     B_SOLO7 = 56,
     B_SOLO8 = 57,
-    NUM_BUTTONS = 58
+    B_PR_SOUND = 58,
+    B_PR_PERF = 59,
+    B_PR_SAVE = 60,
+    B_PR_LOAD = 61,
+    NUM_BUTTONS = 62
 };
+#define NUM_SLOTS 64
 #define GLYPHS " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-+/"
 #define NUM_GLYPHS 40

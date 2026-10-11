@@ -124,3 +124,4 @@ flowchart LR
 | `src/ui.c` | The front panel: keys, SHIFT functions, the encoders, the display |
 | `src/bl.c`, `src/factory.c` | The instance and the audio block; the factory sounds and demo patterns |
 | `src/engine.c`, `src/store.c` | MPC's side: parameters, MIDI, the state chunk |
+| `src/preset.c` | Presets: sounds and performances saved to and loaded from the device's storage |

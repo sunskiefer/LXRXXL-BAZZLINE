@@ -181,6 +181,38 @@ int main(void)
     playing = 0;
     run(a, 1.0);
 
+    /* SHIFT + PLAY MODE: BACK/NOTE steps the mode both ways (MPC's wheel and Q-Link steps), SELECT/GATE stays put */
+    {
+        const float sel0 = a->getP(a, P_SEL);
+        tap(a, P_SHIFT); tap(a, P_S6);
+        display(a, d);
+        CHECK(!strcmp(d, "FWD"), "SHIFT + PLAY MODE: '%s'", d);
+        a->setP(a, P_NOTE, a->getP(a, P_NOTE) + 0.01f); run(a, 0.05); display(a, d);
+        CHECK(!strcmp(d, "REV"), "the wheel forwards: '%s'", d);
+        a->setP(a, P_NOTE, a->getP(a, P_NOTE) + 1.f / 128); run(a, 0.05); display(a, d);
+        CHECK(!strcmp(d, "PNG"), "a Q-Link forwards: '%s'", d);
+        a->setP(a, P_NOTE, a->getP(a, P_NOTE) - 0.01f); run(a, 0.05); display(a, d);
+        CHECK(!strcmp(d, "REV"), "the wheel backwards: '%s'", d);
+        a->setP(a, P_NOTE, a->getP(a, P_NOTE) - 1.f / 128); run(a, 0.05); display(a, d);
+        CHECK(!strcmp(d, "FWD"), "a Q-Link backwards: '%s'", d);
+        CHECK(fabsf(a->getP(a, P_SEL) - sel0) < 1e-4f, "SELECT/GATE did not move (%.3f -> %.3f)", sel0, a->getP(a, P_SEL));
+        tap(a, P_SHIFT);
+        /* outside a function: SELECT/GATE walks the steps one by one, both ways */
+        {
+            char d0[8];
+            int n0, n1, n2;
+            a->setP(a, P_SEL, 0.f); run(a, 0.05);
+            a->setP(a, P_SEL, a->getP(a, P_SEL) + 1.f / 128); run(a, 0.05); display(a, d0);
+            n0 = atoi(strchr(d0, 'S') ? strchr(d0, 'S') + 1 : d0);
+            a->setP(a, P_SEL, a->getP(a, P_SEL) + 0.01f); run(a, 0.05); display(a, d);
+            n1 = atoi(strchr(d, 'S') ? strchr(d, 'S') + 1 : d);
+            a->setP(a, P_SEL, a->getP(a, P_SEL) - 1.f / 128); run(a, 0.05); display(a, d);
+            n2 = atoi(strchr(d, 'S') ? strchr(d, 'S') + 1 : d);
+            CHECK(n0 == 2 && n1 == 3 && n2 == 2, "SELECT/GATE one step at a time, both ways (%d %d %d, %s)", n0, n1, n2, d0);
+        }
+        run(a, 2.0);
+    }
+
     /* SHIFT + ACC: the step keys set accents; SHIFT leaves */
     tap(a, P_SHIFT); tap(a, P_S1);
     display(a, d);
