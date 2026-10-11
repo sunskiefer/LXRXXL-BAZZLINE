@@ -76,7 +76,7 @@ static inline float sat(float x)
     return x * (27.f + x * x) / (27.f + 9.f * x * x);
 }
 
-void fx_render(Bl *x, float *L, float *R, int n)
+void fx_render(Bl *x, float *L, float *R, const float *sL, const float *sR, int n)
 {
     Fx *f = &x->fx;
     const float *g = x->p.g;
@@ -137,12 +137,13 @@ void fx_render(Bl *x, float *L, float *R, int n)
         if (!tape && f->xfade < 1.f) f->xfade += 1.f / 2048.f;
         for (c = 0; c < 2; c++) {
             float *b = f->buf[c];
-            const float in = c ? R[i] : L[i];
+            const float in = c ? R[i] : L[i];      /* the dry mix */
+            const float sin_ = c ? sR[i] : sL[i];  /* what the tracks send to the delay */
             float wr;
             if (f->hold) {
                 /* HOLD: the buffer loops TIME long; ADD layers the input on it */
                 const float loop = rdbuf(b, f->w, f->holdLen);
-                wr = loop + (f->add ? sat(in * f->inSm) * 0.7f : 0.f);
+                wr = loop + (f->add ? sat(sin_ * f->inSm) * 0.7f : 0.f);
                 wr = sat(wr * 0.98f);
             } else {
                 float fb = wet[c] * f->fbSm;
@@ -150,7 +151,7 @@ void fx_render(Bl *x, float *L, float *R, int n)
                 fb = f->lpz[c];
                 f->hpz[c] += hpA * (fb - f->hpz[c]);
                 fb -= f->hpz[c];
-                wr = sat(in * f->inSm + (tape ? sat(fb * 1.2f) * 0.85f : fb));
+                wr = sat(sin_ * f->inSm + (tape ? sat(fb * 1.2f) * 0.85f : fb));
             }
             b[f->w] = wr;
             /* the analogue crossfader */

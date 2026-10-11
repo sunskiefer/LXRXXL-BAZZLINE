@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0
+- Three pages, each filling the whole screen: PANEL (the front, stretched to MPC's full width), MODULES (bigger, with a
+  readout) and FX MIXER (the delay and the gate/duck, bigger, with a readout and the mixer).
+- Knobs turn in place: their filmstrips follow the framework's rule for MPC (128 frames, at most 126 px). In 0.1.0 some
+  knobs slid up and down instead.
+- The MIXER: PAN, DLY SEND, LEVEL, MUTE and SOLO for each of the eight tracks, and MASTER. The delay is now fed by
+  each track's send (100 by default: as before).
+- The readout: the control last touched, its track and its value, in big letters (MODULES, FX MIXER).
+- TRACK (MODULES) and the duck's MIDI CH (FX MIXER) step both ways with the data wheel, a Q-Link or a drag (in 0.1.0
+  the TRACK tap only went forwards).
+- Q-Links: every parameter of every page, in reading order (top left first, row by row); 0.1.0 had only 16 per page.
+- Projects from 0.1.0 load (the mixer as it sounded then).
+
 ## 0.1.0
 - First version: a variation of LXRXXL with eight bass voices built after the Erica Synths Bassline (DB-01) signal
   path on the LXR's oscillator tables (VCO / FM / WAVE, sub, noise, BBD or unison swarm, drive pre/post with three

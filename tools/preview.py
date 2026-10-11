@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A picture of a built page with chosen values, as MPC would draw it (offline check, README pictures).
 
-    python3 tools/preview.py <Plugin Skins dir> <out.png> <tab 0|1> [key=value ...]
+    python3 tools/preview.py <Plugin Skins dir> <out.png> <tab 0|1|2> [key=value ...]
 
 value: a number 0..1, or an option's index; keys not given take params.json's default. A key (button) given as
 1 is drawn lit; disp1..3 take a character ("disp1=1"), dots 0/1."""
@@ -9,7 +9,7 @@ import json
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gen_params  # noqa: E402
@@ -21,6 +21,7 @@ def main(skin, out, tab, sets):
     tui = json.load(open(os.path.join(skin, "TUI.json")))["pageData"]
     params = json.load(open(os.path.join(ROOT, "params.json")))["params"]
     vals = {}
+    texts = {}
     for i, p in enumerate(params):
         n = len(p.get("options") or [])
         vals[i] = (float(p.get("default", 0)), n)
@@ -29,9 +30,16 @@ def main(skin, out, tab, sets):
         i = [p["key"] for p in params].index(k)
         if k.startswith("disp"):
             v = str(gen_params.GLYPHS.index(v if v != "_" else " "))
+        if k == "readout":
+            texts[i] = v
+            continue
         vals[i] = (float(v), vals[i][1])
     defs = {d["key"]: d["value"] for d in tui["componentDefinitions"]["localComponentDefinitions"]}
-    page = defs[tui["tabs"][tab]["componentName"]]
+    names = []
+    for t in tui["tabs"]:   # a tab's Q-Link sub-pages share its page
+        if t["componentName"] not in names:
+            names.append(t["componentName"])
+    page = defs[names[tab]]
     img = Image.new("RGBA", (1280, 628), (0, 0, 0, 255))
 
     def opt(i):
@@ -70,6 +78,12 @@ def main(skin, out, tab, sets):
                 on = (int(round(v)) == dd["buttonId"]) if dd["numButtonsInGroup"] > 1 else v > 0.5
                 im = Image.open(os.path.join(skin, dd["onImage"] if on else dd["offImage"])).convert("RGBA")
                 img.alpha_composite(im, (x + px, y + py))
+            elif sd["type"] == "Label" and pi in texts:   # MPC's own text (Titillium Web): a stand-in font here
+                st = sd["data"]["textStyle"]
+                col = st["colour"]
+                f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf", int(st["font"]["height"] * 0.8))
+                ImageDraw.Draw(img).text((x + px + pw / 2, y + py + ph / 2), texts[pi], font=f, anchor="mm",
+                                         fill="#" + col[2:])
     img.convert("RGB").save(out)
 
 

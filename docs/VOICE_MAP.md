@@ -92,22 +92,27 @@ flowchart LR
     direction TB
     T1["track 1"] & T2["track 2"] & T3["..."] & T8["track 8"]
   end
-  V -- "LEVEL, PAN, MUTE, LINK" --> SUM(("stereo mix"))
-  SUM --> DLY
+  V -- "MIXER: LEVEL, PAN,<br/>MUTE, SOLO" --> SUM(("stereo mix<br/>(dry)"))
+  V -- "DLY SEND<br/>(per track)" --> SEND(("send bus"))
+  SEND --> DLY
   subgraph DLY["DELAY (one, after the Erica DIY Delay's manual)"]
     direction TB
     IN["IN LVL"] --> BUF["buffer<br/>TIME 0-800 ms or synced<br/>TAPE: slews, darkens, saturates<br/>DIGITAL: crossfades"] --> FB["FEEDBACK<br/>(self-oscillates)"] --> BUF
     BUF --> HOLD["HOLD / ADD / REVERSE"]
-    HOLD --> XF["DRY/WET crossfade"]
+    HOLD --> XF["DRY/WET crossfade<br/>(the dry mix, the repeats)"]
   end
+  SUM --> XF
   DLY --> GD
   TRIG["MIDI: a note on the duck's MIDI CH<br/>or in the lowest octave"] --> GD
-  GD["GATE/DUCK<br/>DEPTH, ATTACK, HOLD, RELEASE<br/>(ON/OFF)"] --> LIM["soft limit"] --> OUT["MPC"]
+  GD["GATE/DUCK<br/>DEPTH, ATTACK, HOLD, RELEASE<br/>(ON/OFF)"] --> MASTER["MASTER"] --> LIM["soft limit"] --> OUT["MPC"]
 ```
 
-1. The voices are summed in stereo (PAN), then the delay runs on the whole mix.
-2. The gate/duck comes last, so a duck pumps the delay's repeats too, like a sidechain on a bus.
-3. A gentle soft limiter keeps eight voices and a self-oscillating delay from clipping MPC's input.
+1. The mixer sums the voices in stereo (LEVEL, PAN; MUTE and SOLO decide which sound). Each track also feeds the
+   delay's send bus through its DLY SEND, so the delay hears only what is sent to it.
+2. The delay's DRY/WET crossfades between the dry mix and the repeats.
+3. The gate/duck comes after the delay, so a duck pumps the delay's repeats too, like a sidechain on a bus.
+4. MASTER sets the level of the whole instance; a gentle soft limiter keeps eight voices and a self-oscillating delay
+   from clipping MPC's input.
 
 ## 4. Where it is in the code
 

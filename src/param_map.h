@@ -4,9 +4,9 @@
 #include "param_ids.h"
 #define UNUSED __attribute__((unused))
 
-enum { PK_SOUND, PK_GLOBAL, PK_UI, PK_BUTTON, PK_SHOW };
+enum { PK_SOUND, PK_GLOBAL, PK_UI, PK_BUTTON, PK_SHOW, PK_MIX };
 enum { UI_SEL, UI_NOTE, UI_TRACK };
-enum { SH_DISP1, SH_DISP2, SH_DISP3, SH_DOT1, SH_DOT2, SH_DOT3 };
+enum { SH_DISP1, SH_DISP2, SH_DISP3, SH_DOT1, SH_DOT2, SH_DOT3, SH_READOUT };
 
 typedef struct { uint8_t kind, id, nopts; } ParamMap;
 static const ParamMap PARAM_MAP[P_COUNT] UNUSED = {
@@ -109,6 +109,48 @@ static const ParamMap PARAM_MAP[P_COUNT] UNUSED = {
     {PK_BUTTON, B_GD_ON, 0},   /* gd_on */
     {PK_BUTTON, B_TRK_NEXT, 0},   /* trk_next */
     {PK_BUTTON, B_CH_NEXT, 0},   /* ch_next */
+    {PK_BUTTON, B_MUTE1, 0},   /* mute1 */
+    {PK_BUTTON, B_MUTE2, 0},   /* mute2 */
+    {PK_BUTTON, B_MUTE3, 0},   /* mute3 */
+    {PK_BUTTON, B_MUTE4, 0},   /* mute4 */
+    {PK_BUTTON, B_MUTE5, 0},   /* mute5 */
+    {PK_BUTTON, B_MUTE6, 0},   /* mute6 */
+    {PK_BUTTON, B_MUTE7, 0},   /* mute7 */
+    {PK_BUTTON, B_MUTE8, 0},   /* mute8 */
+    {PK_BUTTON, B_SOLO1, 0},   /* solo1 */
+    {PK_BUTTON, B_SOLO2, 0},   /* solo2 */
+    {PK_BUTTON, B_SOLO3, 0},   /* solo3 */
+    {PK_BUTTON, B_SOLO4, 0},   /* solo4 */
+    {PK_BUTTON, B_SOLO5, 0},   /* solo5 */
+    {PK_BUTTON, B_SOLO6, 0},   /* solo6 */
+    {PK_BUTTON, B_SOLO7, 0},   /* solo7 */
+    {PK_BUTTON, B_SOLO8, 0},   /* solo8 */
+    {PK_MIX, 0, 0},   /* mix_lvl1 */
+    {PK_MIX, 1, 0},   /* mix_lvl2 */
+    {PK_MIX, 2, 0},   /* mix_lvl3 */
+    {PK_MIX, 3, 0},   /* mix_lvl4 */
+    {PK_MIX, 4, 0},   /* mix_lvl5 */
+    {PK_MIX, 5, 0},   /* mix_lvl6 */
+    {PK_MIX, 6, 0},   /* mix_lvl7 */
+    {PK_MIX, 7, 0},   /* mix_lvl8 */
+    {PK_MIX, 8, 0},   /* mix_pan1 */
+    {PK_MIX, 9, 0},   /* mix_pan2 */
+    {PK_MIX, 10, 0},   /* mix_pan3 */
+    {PK_MIX, 11, 0},   /* mix_pan4 */
+    {PK_MIX, 12, 0},   /* mix_pan5 */
+    {PK_MIX, 13, 0},   /* mix_pan6 */
+    {PK_MIX, 14, 0},   /* mix_pan7 */
+    {PK_MIX, 15, 0},   /* mix_pan8 */
+    {PK_MIX, 16, 0},   /* mix_snd1 */
+    {PK_MIX, 17, 0},   /* mix_snd2 */
+    {PK_MIX, 18, 0},   /* mix_snd3 */
+    {PK_MIX, 19, 0},   /* mix_snd4 */
+    {PK_MIX, 20, 0},   /* mix_snd5 */
+    {PK_MIX, 21, 0},   /* mix_snd6 */
+    {PK_MIX, 22, 0},   /* mix_snd7 */
+    {PK_MIX, 23, 0},   /* mix_snd8 */
+    {PK_MIX, 24, 0},   /* mix_master */
+    {PK_SHOW, SH_READOUT, 0},   /* readout */
 };
 
 typedef struct { const char *key, *name; float def; uint8_t nopts; const char *const *opts; } SoundDef;

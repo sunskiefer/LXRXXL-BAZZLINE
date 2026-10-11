@@ -221,6 +221,79 @@ int main(int argc, char **argv)
     peak = play(in, &ppq, 120, 20.0, 0, &rms, NULL);
     CHECK(peak < 1.f, "self-oscillating feedback stays bounded (%f)", peak);
 
+    /* ---- the MIXER: levels, mutes, solos, sends, master, the readout */
+    {
+        float full, r;
+        char b[128] = "";
+        set(in, "stop", "1");
+        set(in, "state", "");   /* ignored: a bad chunk changes nothing */
+        set(in, "shift", "1"); set(in, "mute", "1"); set(in, "shift", "1");   /* RESET: the factory project */
+        seq_loadPattern(x, 0);
+        x->p.mutes = 0; x->p.solos = 0;
+        setf(in, "dly_wet", 0.f);
+        setf(in, "dly_fb", 0.f);
+        ppq = 0;
+        play(in, &ppq, 120, 0.05, 0, &rms, NULL);
+        play(in, &ppq, 120, 4.0, 1, &rms, NULL); full = (float)rms;
+        play(in, &ppq, 120, 0.5, 0, &rms, NULL);
+        for (k = 1; k <= 8; k++) { snprintf(key, sizeof key, "mute%d", k); set(in, key, "1"); }
+        CHECK(x->p.mutes == 0xff, "MUTE 1-8 mute every track (%02x)", x->p.mutes);
+        ppq = 0;
+        play(in, &ppq, 120, 4.0, 1, &rms, NULL); r = (float)rms;
+        CHECK(r < 1e-4f, "all muted: silence (%f, full %f)", r, full);
+        play(in, &ppq, 120, 0.5, 0, &rms, NULL);
+        for (k = 1; k <= 8; k++) { snprintf(key, sizeof key, "mute%d", k); set(in, key, "1"); }
+        set(in, "solo1", "1");
+        CHECK(x->p.solos == 1, "SOLO 1 (%02x)", x->p.solos);
+        ppq = 0;
+        play(in, &ppq, 120, 4.0, 1, &rms, NULL); r = (float)rms;
+        E->get_param(in, "solo1_on", b, sizeof b);
+        CHECK(atof(b) > 0, "SOLO 1 lights");
+        CHECK(r > 0.001f && r < full, "track 1 soloed: only its bass (%f < %f)", r, full);
+        play(in, &ppq, 120, 0.5, 0, &rms, NULL);
+        set(in, "solo1", "1");
+        setf(in, "mix_master", 0.f);
+        ppq = 0;
+        play(in, &ppq, 120, 2.0, 1, &rms, NULL);
+        CHECK(rms < 1e-4, "MASTER down: silence (%f)", rms);
+        play(in, &ppq, 120, 0.5, 0, &rms, NULL);
+        setf(in, "mix_master", 0.8f);
+        setf(in, "mix_lvl1", 0.25f);
+        CHECK(fabsf(x->p.snd[0].v[SP_LEVEL] - 0.25f) < 1e-4f && fabsf(getf(in, "level") * 0 + getf(in, "mix_lvl1") - 0.25f) < 1e-4f,
+              "the mixer's LEVEL 1 is track 1's LEVEL");
+        E->get_param(in, "readout", b, sizeof b);
+        CHECK(strstr(b, "T1") && strstr(b, "LEVEL"), "the readout names the last control ('%s')", b);
+        setf(in, "cutoff", 0.5f);
+        E->get_param(in, "readout", b, sizeof b);
+        CHECK(strstr(b, "CUTOFF") != NULL, "the readout follows the knob ('%s')", b);
+        setf(in, "mix_snd2", 0.f);
+        CHECK(x->p.send[1] == 0.f, "DLY SEND 2 (%f)", x->p.send[1]);
+        setf(in, "mix_snd2", 1.f);
+
+        /* a 0.1.0 chunk (version 1, no mixer) still loads, with the mixer as it sounded */
+        {
+            static char s1[1 << 20];
+            int len = E->get_param(in, "state", s1, sizeof s1);
+            char *nl = strchr(s1, '\n');
+            char hdr[128];
+            int h;
+            x->p.master = 0.3f;
+            len = E->get_param(in, "state", s1, sizeof s1);
+            nl = strchr(s1, '\n');
+            (void)len;
+            h = snprintf(hdr, sizeof hdr, "LXRXXL-BAZZLINE 1 %u 0 0\n", (unsigned)PROJECT_V1_SIZE);
+            memmove(s1 + h, nl + 1, 2 * PROJECT_V1_SIZE);
+            memcpy(s1, hdr, (size_t)h);
+            s1[h + 2 * PROJECT_V1_SIZE] = 0;
+            in2 = E->create(NULL);
+            ((Bl *)in2)->p.master = 0.1f;
+            set(in2, "state", s1);
+            CHECK(fabsf(((Bl *)in2)->p.master - 0.8f) < 1e-5f && ((Bl *)in2)->p.send[3] == 1.f,
+                  "a 0.1.0 project loads (master %f)", ((Bl *)in2)->p.master);
+            E->destroy(in2);
+        }
+    }
+
     E->destroy(in);
     printf(fails ? "engine_test: %d FAILED\n" : "engine_test: PASSED\n", fails);
     return fails != 0;

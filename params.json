@@ -916,6 +916,317 @@
    "min": 0,
    "max": 1,
    "default": 0
+  },
+  {
+   "key": "mute1",
+   "name": "MUTE 1",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute2",
+   "name": "MUTE 2",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute3",
+   "name": "MUTE 3",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute4",
+   "name": "MUTE 4",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute5",
+   "name": "MUTE 5",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute6",
+   "name": "MUTE 6",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute7",
+   "name": "MUTE 7",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mute8",
+   "name": "MUTE 8",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo1",
+   "name": "SOLO 1",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo2",
+   "name": "SOLO 2",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo3",
+   "name": "SOLO 3",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo4",
+   "name": "SOLO 4",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo5",
+   "name": "SOLO 5",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo6",
+   "name": "SOLO 6",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo7",
+   "name": "SOLO 7",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "solo8",
+   "name": "SOLO 8",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "mix_lvl1",
+   "name": "LEVEL 1",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl2",
+   "name": "LEVEL 2",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl3",
+   "name": "LEVEL 3",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl4",
+   "name": "LEVEL 4",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl5",
+   "name": "LEVEL 5",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl6",
+   "name": "LEVEL 6",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl7",
+   "name": "LEVEL 7",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_lvl8",
+   "name": "LEVEL 8",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "mix_pan1",
+   "name": "PAN 1",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan2",
+   "name": "PAN 2",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan3",
+   "name": "PAN 3",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan4",
+   "name": "PAN 4",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan5",
+   "name": "PAN 5",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan6",
+   "name": "PAN 6",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan7",
+   "name": "PAN 7",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_pan8",
+   "name": "PAN 8",
+   "min": 0,
+   "max": 1,
+   "default": 0.5
+  },
+  {
+   "key": "mix_snd1",
+   "name": "DLY SEND 1",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd2",
+   "name": "DLY SEND 2",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd3",
+   "name": "DLY SEND 3",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd4",
+   "name": "DLY SEND 4",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd5",
+   "name": "DLY SEND 5",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd6",
+   "name": "DLY SEND 6",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd7",
+   "name": "DLY SEND 7",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_snd8",
+   "name": "DLY SEND 8",
+   "min": 0,
+   "max": 1,
+   "default": 1.0
+  },
+  {
+   "key": "mix_master",
+   "name": "MASTER",
+   "min": 0,
+   "max": 1,
+   "default": 0.8
+  },
+  {
+   "key": "readout",
+   "name": "READOUT",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
   }
  ]
 }

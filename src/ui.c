@@ -127,6 +127,72 @@ static void global_text(Bl *x, int g, char *buf)
     snprintf(buf, 8, "%d", (int)lroundf(v * 100.f));
 }
 
+/* full value text for the readout */
+static void full_text(Bl *x, int kind, int id, char *buf, int n)
+{
+    char b[16];
+    if (kind == PK_SOUND) {
+        const float v = x->p.snd[x->ui.track].v[id];
+        if (SOUND_DEFS[id].nopts) { snprintf(buf, (size_t)n, "%s", SOUND_DEFS[id].opts[(int)v]); return; }
+        sound_text(x, id, b);
+        if (id == SP_LFO_RATE && x->p.snd[x->ui.track].v[SP_MOD_SYNC] < 1.f) snprintf(buf, (size_t)n, "%s Hz", b);
+        else if (id == SP_FM_RATIO) snprintf(buf, (size_t)n, "x %s", b);
+        else snprintf(buf, (size_t)n, "%s", b);
+        return;
+    }
+    if (kind == PK_GLOBAL) {
+        const float v = x->p.g[id];
+        if (id == G_GD_CH) { snprintf(buf, (size_t)n, "CH %d", (int)v + 1); return; }
+        if (GLOBAL_DEFS[id].nopts) { snprintf(buf, (size_t)n, "%s", GLOBAL_DEFS[id].opts[(int)v]); return; }
+        global_text(x, id, b);
+        snprintf(buf, (size_t)n, id == G_DLY_TIME && !x->p.dlySync ? "%s ms" : "%s", b);
+        return;
+    }
+    if (kind == PK_MIX) {
+        const int t = id % 8, w = id / 8;
+        const float v = id == 24 ? x->p.master : w == 0 ? x->p.snd[t].v[SP_LEVEL] : w == 1 ? x->p.snd[t].v[SP_PAN] : x->p.send[t];
+        if (id != 24 && w == 1) {
+            const int p = (int)lroundf((v - 0.5f) * 100.f);
+            if (p == 0) snprintf(buf, (size_t)n, "C");
+            else snprintf(buf, (size_t)n, "%c %d", p < 0 ? 'L' : 'R', p < 0 ? -p : p);
+        } else snprintf(buf, (size_t)n, "%d", (int)lroundf(v * 100.f));
+        return;
+    }
+    snprintf(buf, (size_t)n, "-");
+}
+
+void ui_touch(Bl *x, int param) { x->touched = (int16_t)param; x->displayRev++; }
+
+void ui_readout(Bl *x, char *buf, int n)
+{
+    const int p = x->touched;
+    char v[48], nm[48];
+    if (p < 0 || p >= P_COUNT) { snprintf(buf, (size_t)n, "TRACK %d", x->ui.track + 1); return; }
+    {
+        const ParamMap *m = &PARAM_MAP[p];
+        if (m->kind == PK_UI) {
+            const Step *st = &bl_edit(x)->s[x->ui.sel];
+            if (m->id == UI_SEL) snprintf(buf, (size_t)n, "T%d   STEP %d", x->ui.track + 1, x->ui.sel + 1);
+            else if (m->id == UI_NOTE) {
+                char nn[8];
+                static const char *const N[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+                snprintf(nn, sizeof nn, "%s%d", N[st->note % 12], st->note / 12 - 2);
+                snprintf(buf, (size_t)n, "T%d   STEP %d   %s", x->ui.track + 1, x->ui.sel + 1, nn);
+            } else snprintf(buf, (size_t)n, "TRACK %d", x->ui.track + 1);
+            return;
+        }
+        full_text(x, m->kind, m->id, v, sizeof v);
+        if (m->kind == PK_SOUND) snprintf(nm, sizeof nm, "T%d   %s", x->ui.track + 1, SOUND_DEFS[m->id].name);
+        else if (m->kind == PK_GLOBAL) snprintf(nm, sizeof nm, "%s", GLOBAL_DEFS[m->id].name);
+        else if (m->kind == PK_MIX) {
+            static const char *const W[3] = {"LEVEL", "PAN", "DLY SEND"};
+            if (m->id == 24) snprintf(nm, sizeof nm, "MASTER");
+            else snprintf(nm, sizeof nm, "T%d   %s", m->id % 8 + 1, W[m->id / 8]);
+        } else nm[0] = 0;
+        snprintf(buf, (size_t)n, "%s   %s", nm, v);
+    }
+}
+
 void ui_soundTouched(Bl *x, int sp)
 {
     char b[16];
@@ -393,6 +459,16 @@ void ui_press(Bl *x, int b)
         x->p.gdOn = (uint8_t)!x->p.gdOn;
         ui_message(x, x->p.gdOn ? "ON" : "OFF", 0, 800);
         break;
+    case B_MUTE1: case B_MUTE2: case B_MUTE3: case B_MUTE4: case B_MUTE5: case B_MUTE6: case B_MUTE7: case B_MUTE8:
+        x->p.mutes ^= (uint8_t)(1u << (b - B_MUTE1));
+        snprintf(t, sizeof t, "M%d", b - B_MUTE1 + 1);
+        ui_message(x, x->p.mutes & (1u << (b - B_MUTE1)) ? t : "ON", 0, 600);
+        break;
+    case B_SOLO1: case B_SOLO2: case B_SOLO3: case B_SOLO4: case B_SOLO5: case B_SOLO6: case B_SOLO7: case B_SOLO8:
+        x->p.solos ^= (uint8_t)(1u << (b - B_SOLO1));
+        snprintf(t, sizeof t, "S%d", b - B_SOLO1 + 1);
+        ui_message(x, x->p.solos & (1u << (b - B_SOLO1)) ? t : "OFF", 0, 600);
+        break;
     case B_TRK_NEXT: ui_press(x, B_TRK1 + (x->ui.track + 1) % NUM_TRACKS); flash(x, B_TRK_NEXT); break;
     case B_CH_NEXT:
         x->p.g[G_GD_CH] = (float)(((int)x->p.g[G_GD_CH] + 1) % 16);
@@ -461,7 +537,10 @@ int ui_led(Bl *x, int b)
     case B_D_REV: return x->fx.rev;
     case B_D_TAP: return x->p.dlySync != 0;
     case B_GD_ON: return x->p.gdOn;
-    default: return 0;
+    default:
+        if (b >= B_MUTE1 && b <= B_MUTE8) return (x->p.mutes >> (b - B_MUTE1)) & 1;
+        if (b >= B_SOLO1 && b <= B_SOLO8) return (x->p.solos >> (b - B_SOLO1)) & 1;
+        return 0;
     }
 }
 

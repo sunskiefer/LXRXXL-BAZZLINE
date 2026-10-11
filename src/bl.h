@@ -7,6 +7,7 @@
  * manuals. The oscillator's band-limited tables are the LXR's own (third_party/lxr02open wavetable.c). */
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 #include "ids.h"
 
 #define NUM_TRACKS    8
@@ -56,7 +57,13 @@ typedef struct {
     uint8_t dlySync;    /* the delay: 0 free (ms), 1 MPC's beat, 2 tapped */
     float dlyTap;       /* the tapped period in seconds (dlySync 2) */
     uint8_t pad[4];
+    /* 0.2.0 (appended: a 0.1.0 project is a prefix of this one) -- the MIXER */
+    float send[NUM_TRACKS];   /* each track's delay send 0..1 */
+    float master;             /* 0..1, 0.8 = unity */
+    uint8_t solos;            /* bit t: track t soloed */
+    uint8_t pad2[3];
 } Project;
+#define PROJECT_V1_SIZE offsetof(Project, send)
 
 /* ---------------------------------------------------------------- the voice (voice.c) */
 #define BBD_LEN 2048
@@ -171,6 +178,7 @@ typedef struct Bl {
     uint32_t clock;                  /* frames since the instance started */
     uint32_t displayRev;
     uint32_t rnd;                    /* the RND PATT generator */
+    int16_t touched;                 /* the plugin parameter last edited (the readout), -1 none */
     char dataDir[512];
 } Bl;
 
@@ -194,7 +202,7 @@ void voice_kill(Voice *v);
 /* fx.c */
 void fx_init(Fx *f);
 void fx_free(Fx *f);
-void fx_render(Bl *x, float *L, float *R, int n);
+void fx_render(Bl *x, float *L, float *R, const float *sL, const float *sR, int n);   /* s: the delay sends */
 void fx_duckTrigger(Bl *x);
 float fx_delaySeconds(Bl *x);
 int fx_syncFactorIndex(float knob);
@@ -224,6 +232,8 @@ void ui_globalTouched(Bl *x, int g);
 void ui_message(Bl *x, const char *text, uint8_t dots, int ms);
 void ui_display(Bl *x, char out[4], uint8_t *dots);   /* what the display shows now */
 void ui_midiNote(Bl *x, uint8_t ch, uint8_t note, uint8_t vel);
+void ui_readout(Bl *x, char *buf, int n);
+void ui_touch(Bl *x, int param);              /* a parameter was edited: the readout shows it */     /* the readout: the last edited parameter, its name and value */
 
 /* store.c */
 char *store_serialize(Bl *x, int *len);

@@ -17,7 +17,7 @@ char *store_serialize(Bl *x, int *len)
     size_t i;
     int h;
     if (!s) return NULL;
-    h = snprintf(s, 128, "%s 1 %u %u %u\n", MAGIC, (unsigned)n, (unsigned)x->patSlot, (unsigned)x->ui.track);
+    h = snprintf(s, 128, "%s 2 %u %u %u\n", MAGIC, (unsigned)n, (unsigned)x->patSlot, (unsigned)x->ui.track);
     for (i = 0; i < n; i++) {
         s[h + 2 * i] = hex[b[i] >> 4];
         s[h + 2 * i + 1] = hex[b[i] & 15];
@@ -44,14 +44,20 @@ int store_deserialize(Bl *x, const char *text)
     int t;
     if (!text || strncmp(text, MAGIC " ", strlen(MAGIC) + 1)) return 0;
     if (sscanf(text + strlen(MAGIC) + 1, "%u %u %u %u", &ver, &size, &pat, &track) != 4) return 0;
-    if (ver != 1 || size != sizeof(Project)) return 0;
+    /* 2: this layout; 1: 0.1.0's, a prefix of it (the mixer appended) */
+    if (!((ver == 2 && size == sizeof(Project)) || (ver == 1 && size == PROJECT_V1_SIZE))) return 0;
     p = strchr(text, '\n');
     if (!p) return 0;
     p++;
     if (strlen(p) < 2 * (size_t)size) return 0;
     np = malloc(sizeof *np);
     if (!np) return 0;
-    for (i = 0; i < sizeof *np; i++) {
+    if (size < sizeof *np) {   /* a 0.1.0 project: the mixer as it sounded then */
+        memset(np, 0, sizeof *np);
+        for (t = 0; t < NUM_TRACKS; t++) np->send[t] = 1.f;
+        np->master = 0.8f;
+    }
+    for (i = 0; i < size; i++) {
         const int a = nib(p[2 * i]), b = nib(p[2 * i + 1]);
         if (a < 0 || b < 0) { free(np); return 0; }
         ((uint8_t *)np)[i] = (uint8_t)(a << 4 | b);
@@ -80,6 +86,8 @@ int store_deserialize(Bl *x, const char *text)
     if (np->dlySync > 2) np->dlySync = 0;
     if (!(np->dlyTap >= 0.f && np->dlyTap <= 4.f)) np->dlyTap = 0;
     if (!(np->bpm >= 0.f && np->bpm <= 300.f)) np->bpm = 0;
+    for (t = 0; t < NUM_TRACKS; t++) if (!(np->send[t] >= 0.f && np->send[t] <= 1.f)) np->send[t] = 1.f;
+    if (!(np->master >= 0.f && np->master <= 1.f)) np->master = 0.8f;
     seq_stop(x);
     x->p = *np;
     free(np);

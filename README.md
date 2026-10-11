@@ -1,7 +1,8 @@
-# LXRXXL BAZZLINE v0.1.0
+# LXRXXL BAZZLINE v0.2.0
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
+![LXRXXL BAZZLINE, the FX MIXER page](docs/img/fx_mixer.png)
 
 **An 8-track bass synth for the Akai Force and MPC (MPC OS 3.x, VST2 through
 [mpc-vst-plugins](https://github.com/sd88me/mpc-vst-plugins)).**
@@ -21,16 +22,20 @@ has a delay and a gate/duck triggered by MIDI.
 > Sonic Potions or Akai Professional. DB-01, Bassline and LXR-02 are their makers' names.
 
 > [!NOTE]
-> **Status: 0.1.0, not yet tested on a device.** It is built and tested offline only:
+> **Status: 0.2.0, not yet tested on a device.** It is built and tested offline only:
 > - x86 under valgrind;
 > - the MPC simulation through the VST2 wrapper, on x86 and on ARM under qemu.
 >
 > See [Testing](#testing). Report anything odd under Issues.
 
-## The two pages
+## The three pages
 
-MPC shows two tabs, **PANEL** and **MODULES**. Both edit the **selected track**, as the DB-01's knobs do: pick a
-track with TRACK 1-8 and every knob and slider shows that track's sound.
+MPC shows three tabs, each filling the whole screen: **PANEL**, **MODULES** and **FX MIXER**. PANEL and MODULES edit
+the **selected track**, as the DB-01's knobs do: pick a track with TRACK 1-8 (PANEL) or TRACK (MODULES) and every knob
+and slider shows that track's sound. FX MIXER has the delay, the gate/duck and a mixer of all eight tracks.
+
+Every knob turns in place. MODULES and FX MIXER have a **readout** in big letters: the control you last touched, its
+track and its value (`T3   CUTOFF   75`, `DELAY TIME   400 ms`, `T5   PAN   L 20`).
 
 ### PANEL (the front)
 
@@ -47,8 +52,8 @@ track with TRACK 1-8 and every knob and slider shows that track's sound.
 | ENV/CV LVL | the pitch envelope's amount (up to +4 octaves at the top: kick-basses, 808s) |
 | SELECT/GATE | walks the steps of the selected track (the display shows `S 1`..`S64`) |
 | BACK/NOTE | the selected step's note, C0..C6 (it turns the step on); in a function, that function's value |
-| DELAY: DRY/WET, TIME | the delay's mix and time (the same as on MODULES) |
-| RELEASE, GATE / DUCK | the gate/duck's release and mode (the same as on MODULES) |
+| DELAY: DRY/WET, TIME | the delay's mix and time (the same as on FX MIXER) |
+| RELEASE, GATE / DUCK | the gate/duck's release and mode (the same as on FX MIXER) |
 | The display | the tempo (its last dot lit: MPC's tempo), a value while you turn it, the function in use |
 | TRACK 1-8 | select a track (a playing track's key glows) |
 | LINK | this track plays the steps of the track before it (stack two voices on one line) |
@@ -78,7 +83,7 @@ track with TRACK 1-8 and every knob and slider shows that track's sound.
 SHIFT again leaves a function. The display shows what is in use (`ACC`, `SLD`, `MOD`, `PEN`, `L16`, `FWD`, `+3`,
 `MIN`, `UP`, `TRI`, `BKA`, `A01`...). A sharp shows as a lit dot after the note's letter (`C.3` = C#3).
 
-### MODULES (the back)
+### MODULES (the sound's modules)
 
 | Section | Controls |
 |---|---|
@@ -90,11 +95,24 @@ SHIFT again leaves a function. The display shows what is in use (`ACC`, `SLD`, `
 | FILTER | MODEL (POLIVOKS: the 12 dB state-variable filter with clipping integrators / DIODE: a 303-style diode ladder), KEY TRACK |
 | SWARM | MODE (BBD: two modulated short delays, darkened / UNISON: three detuned copies), RATE, SPREAD (= DETUNE), MIX |
 | MODULATOR | WAVE (TRI SAW SQR S&H NOISE), DEST (PITCH CUTOFF DRIVE WAVE: the wavetable position in WAVE mode, the FM depth otherwise), FREE / TEMPO (TEMPO: LFO RATE is 4 bars .. 1/32) |
-| DELAY | TIME, IN LVL, FEEDBACK, DRY/WET, ADD, HOLD, REVERSE, TAP SYNC, MODE (TAPE / DIGITAL) |
-| GATE/DUCK | MODE (GATE / DUCK), DEPTH, HOLD, ATTACK, RELEASE, MIDI CH (tap the legend for the next channel), ON/OFF |
-| TRACK | tap TRACK for the next track (the number beside it shows the selected one) |
+| TRACK | the selected track, at the top: turn the data wheel or a Q-Link, or drag it, up or down |
 
-**The delay** (one, after the mix of all eight tracks). It behaves as the Erica Synths DIY Delay's manual describes,
+### FX MIXER (the effects and the mixer)
+
+| Section | Controls |
+|---|---|
+| DELAY | TIME, IN LVL, FEEDBACK, DRY/WET, ADD, HOLD, REVERSE, TAP SYNC, MODE (TAPE / DIGITAL) |
+| GATE/DUCK | MODE (GATE / DUCK), DEPTH, HOLD, ATTACK, RELEASE, MIDI CH (the number: the wheel, a Q-Link or a drag, both ways), ON/OFF |
+| MIXER, tracks 1-8 | PAN, DLY SEND (how much of the track goes into the delay), LEVEL (the slider), MUTE, SOLO |
+| MASTER | the level of the whole instance |
+
+- The mixer's LEVEL and PAN are the tracks' own LEVEL and PAN (MODULES shows the selected track's).
+- MUTE here is the same mute as the panel's MUTE key.
+- SOLO: when any track is soloed, only the soloed tracks sound (a muted track stays muted).
+- DLY SEND: each track feeds the delay through its send; the dry sound is not changed. At 100 (the default) the delay
+  hears the track as before 0.2.0.
+
+**The delay** (one, fed by the eight tracks' DLY SENDs). It behaves as the Erica Synths DIY Delay's manual describes,
 written here (no Erica code):
 - **TIME:** 0..800 ms.
 - **TAP SYNC:**
@@ -119,13 +137,21 @@ There is no threshold: a MIDI trigger is always on.
 
 ### Q-Links
 
-PANEL:
-- **bank 1:** CUTOFF, RESONANCE, VCF ENV, VCA ENV, DRIVE, DETUNE, DRY/WET, DELAY TIME
-- **bank 2:** FM, SUB, NOISE, LFO RATE, LFO LVL, ENV/CV, RELEASE, BACK/NOTE
+Every parameter of a page is on its Q-Links, in reading order: from the top left, row by row, left to right. A page
+with more than 16 parameters has more than one Q-Link page, as listed here. On the Force, bank 1 is the first 8
+and bank 2 the next 8.
 
-MODULES:
-- **bank 1:** FM RATIO, WAVE POS, TONE, ACCENT, SWEEP, SLIDE TIME, KEY TRACK, SWARM RATE
-- **bank 2:** SWARM MIX, VCF ATK, VCF DEC, VCA ATK, PITCH DEC, LEVEL, FEEDBACK, DEPTH
+| Page | Q-Links |
+|---|---|
+| PANEL 1 | DRY/WET, DELAY TIME, RELEASE, GATE/DUCK, DRIVE, DETUNE, VCA ENV, WAVE, FILTER, VCF ENV, RESONANCE, CUTOFF |
+| PANEL 2 | FM LVL, SUB LVL, NOISE LVL, SELECT/GATE, BACK/NOTE, LFO RATE, LFO LVL, ENV/CV LVL |
+| MODULES 1 | TRACK, OSC MODE, FM RATIO, WAVE POS, DRIVE POS, CURVE, TONE, ACCENT, SWEEP, SLIDE TIME, VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC |
+| MODULES 2 | LEVEL, PAN, FILTER MODEL, KEY TRACK, SWARM RATE, SWARM MODE, DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
+| FX MIXER 1 | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, GATE/DUCK, DEPTH, HOLD, ATTACK, RELEASE, DELAY MODE, DUCK MIDI CH |
+| FX MIXER 2 | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8, DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
+| FX MIXER 3 | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8, MASTER |
+
+The keys (step keys, TRACK 1-8, MUTE/SOLO...) are pressed, not turned, so they are not on Q-Links.
 
 ### Playing it
 
@@ -219,7 +245,7 @@ test/arm_sim.sh        # the MPC simulation built for ARM, run under qemu-arm
 The tools:
 - `tools/gen_params.py`: the parameter list. Parameters are only ever appended, because MPC stores automation by index.
 - `tools/panel.py`: where every control of the artwork sits. It writes `layout.conf`.
-- `tools/panel_art.py`: builds both pages from the artwork (`art/panel/`).
+- `tools/panel_art.py`: builds the three pages from the artwork (`art/panel/`).
 - `tools/preview.py`: draws a page with chosen values.
 
 ## Testing
@@ -231,12 +257,15 @@ Offline, every build (`test/run_tests.sh`, and in CI):
   - 20 000 random edits to every key and parameter in every function;
   - the state round-trip;
   - MIDI notes, and the duck on channel 10;
-  - the delay held, reversed, tape and digital, and self-oscillating but bounded.
+  - the delay held, reversed, tape and digital, and self-oscillating but bounded;
+  - the mixer: mutes, solo, MASTER, DLY SEND, LEVEL, the readout, and a 0.1.0 project still loading.
 - **The MPC simulation** (through the VST2 wrapper only, also built for ARM and run under qemu):
   - the display reads MPC's tempo;
   - MPC's play and the panel's PLAY;
   - turning a knob shows its value;
   - TRACK 2 shows its sound;
+  - the TRACK selector and the duck's MIDI CH step both ways (the data wheel and a Q-Link, as MPC sends them);
+  - the mixer's LEVEL is the track's LEVEL, and the readout names it;
   - steps from the step keys play;
   - SHIFT + ACC;
   - the duck;
@@ -257,5 +286,6 @@ still to do.
 - **The sequencer's design and the Force integration:** from LXRXXL.
 - **VST2 wrapper, skin builder and installer:** sd88me, [mpc-vst-plugins](https://github.com/sd88me/mpc-vst-plugins) (MIT).
 - **Display font:** DSEG14 Classic by keshikan, SIL Open Font License 1.1.
+- **Mixer labels:** Michroma by Vernon Adams, SIL Open Font License 1.1 (`art/fonts/Michroma-OFL.txt`).
 
 LXRXXL BAZZLINE is not affiliated with or endorsed by Erica Synths, Sonic Potions or Akai Professional.

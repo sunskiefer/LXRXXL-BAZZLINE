@@ -140,7 +140,28 @@ int main(void)
         CHECK(automated > before, "and the host is told they moved (%d reports)", automated - before);
         tap(a, P_TRK_NEXT);
         CHECK(opt(a, P_TRACK, 8) == 2, "the MODULES page's TRACK tap: the next track");
+        /* the TRACK selector, as MPC moves it: a wheel click is the read-back value -/+ 1/100, a Q-Link tick 1/128 */
+        a->setP(a, P_TRACK, a->getP(a, P_TRACK) - 0.01f);
+        CHECK(opt(a, P_TRACK, 8) == 1, "the wheel backwards: TRACK 2 (%d)", opt(a, P_TRACK, 8) + 1);
+        a->setP(a, P_TRACK, a->getP(a, P_TRACK) - 1.f / 128);
+        CHECK(opt(a, P_TRACK, 8) == 0, "a Q-Link backwards: TRACK 1 (%d)", opt(a, P_TRACK, 8) + 1);
+        a->setP(a, P_TRACK, a->getP(a, P_TRACK) + 0.01f);
+        CHECK(opt(a, P_TRACK, 8) == 1, "the wheel forwards: TRACK 2 (%d)", opt(a, P_TRACK, 8) + 1);
+        a->setP(a, P_GD_CH, a->getP(a, P_GD_CH) - 0.01f);
+        CHECK(opt(a, P_GD_CH, 16) == 8, "the duck's MIDI CH backwards: 10 -> 9 (%d)", opt(a, P_GD_CH, 16) + 1);
+        a->setP(a, P_GD_CH, a->getP(a, P_GD_CH) + 1.f / 128);
+        CHECK(opt(a, P_GD_CH, 16) == 9, "and forwards: 10 (%d)", opt(a, P_GD_CH, 16) + 1);
         tap(a, P_TRK1);
+        /* the mixer's LEVEL 1 is track 1's LEVEL; the readout names it */
+        {
+            char rd[64] = "";
+            a->setP(a, P_MIX_LVL1, 0.5f);
+            run(a, 0.3);
+            CHECK(fabsf(a->getP(a, P_LEVEL) - 0.5f) < 0.01f, "MIXER LEVEL 1 moves track 1's LEVEL (%.2f)", a->getP(a, P_LEVEL));
+            a->d(a, 7, P_READOUT, 0, rd, 0);   /* effGetParamDisplay */
+            CHECK(strstr(rd, "T1") && strstr(rd, "LEVEL"), "the readout: '%s'", rd);
+            a->setP(a, P_MIX_LVL1, 0.8f);
+        }
     }
 
     /* step keys: a new line on an empty pattern (BANK A, PATTERN 8), MPC's play plays it */

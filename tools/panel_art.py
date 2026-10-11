@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
-"""Build both pages of LXRXXL BAZZLINE's skin from the artwork (art/panel/), into the skin mpc-vst-plugins made from
-layout.conf (which only gave the two tabs and their Q-Links).
+"""Build the three pages of LXRXXL BAZZLINE's skin from the artwork (art/panel/), into the skin mpc-vst-plugins made
+from layout.conf (which only gave the tabs and their Q-Links).
 
     python3 tools/panel_art.py "<skin dir>/Plugin Skins"
 
 Geometry: tools/panel.py. For each page:
-  - the background: the panel at MPC's full height, centred, the sides in its finish; a white segmented ring printed
-    around each knob (as in the mockups); on the front panel the display window cleared for the live characters;
-  - knobs: filmstrips of the knob picture turning (-150..+150 degrees) over the panel;
-  - sliders (MODULES): filmstrips of the thumb along the printed channel;
-  - option controls (the selector bars with the slider under them, OSC MODE, FREE/TEMPO, the toggle switches): a radio
-    group of pictures, one per option: tapping an option picks it, the selected one shows its thumb / white box;
-  - keys: two pictures each, unlit (the panel) and lit (the lit key in the display's orange; the delay's and the
-    duck's coloured keys lit as printed, unlit in grey glass);
-  - the display (front), the TRACK number and the duck's MIDI channel (MODULES): one picture per character, shown while
-    its parameter is at that character (MPC's IndexedEnabling), in DSEG14 Classic (OFL) in the display's orange with
-    its unlit segments and a glow.
+  - the background: the artwork filling the whole screen (PANEL stretched; MODULES and FX MIXER at 1.28), a white
+    segmented ring around each knob (drawn on the page, so it stays round), the display windows, the readout strip,
+    and on FX MIXER the mixer's strips (labels in Michroma, OFL; the track numbers in DSEG14);
+  - knobs: filmstrips of the knob picture turning (-150..+150 degrees), 128 square frames with numFrames 127 and at
+    most 126 px (16128 px of strip), the framework's rule for knobs that turn in place on MPC (docs/NOTES.md); one
+    transparent strip per size, over the background;
+  - sliders (MODULES) and the mixer's faders: filmstrips of the cap along the printed channel (frames of the slider's
+    own size, numFrames = their count, strips <= 12288 px); the faders are the artwork's slider box and cap;
+  - option controls (selector bars, OSC MODE, FREE/TEMPO, the toggle switches): a radio group of pictures;
+  - keys: two pictures each, unlit and lit (the lit glass in the display's orange);
+  - the PANEL display: one picture per character (MPC's IndexedEnabling), in DSEG14 Classic (OFL) in the display's
+    orange with its unlit segments and a glow; TRACK (MODULES) and the duck's MIDI CH (FX MIXER) are filmstrips of
+    that look, so the wheel, a drag and a Q-Link step them both ways;
+  - the readout: MPC's own text (Titillium Web) showing the "readout" parameter: the control last touched.
 Every control's definition in TUI.json is written here; the generated ones are removed."""
 import json
 import math
@@ -24,19 +27,22 @@ import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from scipy import ndimage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import panel as P  # noqa: E402
 import gen_params  # noqa: E402
 
 FONT = os.path.join(P.ROOT, "art", "fonts", "DSEG14Classic-Italic.ttf")
+LABEL_FONT = os.path.join(P.ROOT, "art", "fonts", "Michroma-Regular.ttf")
 LIT = (251, 144, 19)            # the display's orange (front_bg.png)
 GHOST = (54, 31, 7)             # its unlit segments
 WINDOW = (8, 6, 4)              # the display window
+INK = (232, 232, 228)           # the panel's printed white
+FINISH = (24, 24, 24)           # the panel's dark finish
 KNOB_SPAN = 150                 # degrees each side of 12 o'clock
-MAX_KNOB_STRIP = 16000          # px: knob strips over 16384 px drift as they turn (mpc-vst-plugins docs/NOTES.md)
-KNOB_FRAMES = 101               # 3 degrees a frame
-MAX_STRIP = 12288               # px: slider strips
+KNOB_FRAMES = 128               # the framework's knob strips: 128 frames, numFrames 127 (turn in place on MPC)
+MAX_STRIP = 12288               # px: slider strips (frames of their own size, numFrames = count)
 SS = 3
 
 
@@ -48,11 +54,16 @@ def R(v):
     return int(round(v))
 
 
-def prect(x, y, w, h):
+def prect(tab, x, y, w, h):
     """artwork rect -> page rect (integers)"""
-    x0, y0 = P.page(x, y)
-    x1, y1 = P.page(x + w, y + h)
+    x0, y0 = P.page(tab, x, y)
+    x1, y1 = P.page(tab, x + w, y + h)
     return R(x0), R(y0), R(x1) - R(x0), R(y1) - R(y0)
+
+
+def knob_px(tab, size):
+    """a knob's page size: round (the page's vertical scale), even, at most KNOB_MAX"""
+    return min(P.KNOB_MAX, 2 * R(size * P.scale(tab)[1] / 2))
 
 
 # ------------------------------------------------------------------------------------------------ drawing helpers
@@ -81,57 +92,129 @@ def ring_layer(size_px):
     return Image.fromarray(out, "RGBA")
 
 
-def side_fill(panel):
-    """the page's sides: the panel's dark finish (its edge colour, a little grain), the top strip carried on"""
-    pa = np.asarray(panel.convert("RGB"), np.float32)
-    edge = np.median(np.concatenate([pa[:, 2:12], pa[:, -12:-2]], 1), axis=1)   # per row
-    edge[30:] = np.minimum(edge[30:], np.median(edge[30:], axis=0))              # below the top strip: the plain finish
-    rng = np.random.default_rng(11)
-    side = edge[:, None, :] + rng.normal(0, 2.0, (pa.shape[0], 8, 1))
-    return np.clip(side, 0, 255)
+def wipe(img, rect):
+    """wipe the printing (labels, slots) inside rect: every bright pixel takes the dark finish around it"""
+    a = np.asarray(img).astype(np.float32)
+    x, y, w, h = [R(v) for v in rect]
+    sub = a[y:y + h, x:x + w, :3]
+    lum = sub @ np.array([0.30, 0.59, 0.11], np.float32)
+    keep = lum < np.percentile(lum, 35) + 6
+    keep = ndimage.binary_erosion(keep, iterations=2)
+    k = keep.astype(np.float32)
+    fill = np.stack([ndimage.uniform_filter(sub[..., c] * k, 15) for c in range(3)], -1)
+    den = ndimage.uniform_filter(k, 15)[..., None]
+    fill = fill / np.maximum(den, 1e-3)
+    fill[den[..., 0] < 1e-3] = FINISH
+    rng = np.random.default_rng(5)
+    fill += rng.normal(0, 2.0, fill.shape[:2])[..., None]
+    a[y:y + h, x:x + w, :3] = np.clip(fill, 0, 255)
+    return Image.fromarray(a.astype(np.uint8), "RGBA")
+
+
+def label_font(px):
+    return ImageFont.truetype(LABEL_FONT, px)
+
+
+def label(d, rect, text, px, fill=INK, anchor="mm"):
+    """printed label (Michroma), centred in rect"""
+    x, y, w, h = rect
+    d.text((x + w / 2, y + h / 2), text, font=label_font(px), fill=fill, anchor=anchor)
+
+
+def mixer_finish(w, h):
+    """the mixer's ground: the panel's dark finish with its grain and a soft top shade"""
+    rng = np.random.default_rng(17)
+    base = np.full((h, w, 3), FINISH, np.float32)
+    base += rng.normal(0, 3.0, (h, w))[..., None]
+    shade = np.linspace(-6, 4, h)[:, None, None]
+    return Image.fromarray(np.clip(base + shade, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+
+
+def window(d, rect, radius=6):
+    x, y, w, h = rect
+    d.rounded_rectangle([x, y, x + w - 1, y + h - 1], radius=radius, fill=WINDOW + (255,), outline=(40, 40, 40, 255), width=2)
 
 
 def make_background(tab):
-    bg_art = art("front_bg.png" if tab == 0 else "modules_bg.png")
-    # rings around the knobs, at the artwork's scale
-    for key, cx, cy, size, img, ring in P.KNOBS[tab]:
-        if ring:
-            rl = ring_layer(size)
-            bg_art.alpha_composite(rl, (R(cx - rl.size[0] / 2), R(cy - rl.size[1] / 2)))
+    pic, (cx0, cy0, cx1, cy1), sx, sy = P.PAGES[tab]
+    bg_art = art(pic)
+    for m in P.MASKS.get(tab, []):
+        bg_art = wipe(bg_art, m)
     if tab == 0:
         # the display window: cleared (the live characters are pictures over it)
         x, y, w, h = P.DISPLAY_BOX
         a = np.asarray(bg_art).copy()
-        sub = a[y:y + h, x:x + w, :3].astype(np.int32)
-        seg = (sub[..., 0] > 40) & (sub[..., 0] > sub[..., 2] * 2)   # the printed segments (lit and ghost)
+        sub_ = a[y:y + h, x:x + w, :3].astype(np.int32)
+        seg = (sub_[..., 0] > 40) & (sub_[..., 0] > sub_[..., 2] * 2)   # the printed segments (lit and ghost)
         seg = np.asarray(Image.fromarray((seg * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))) > 0
-        sub[seg] = WINDOW
-        a[y:y + h, x:x + w, :3] = sub
+        sub_[seg] = WINDOW
+        a[y:y + h, x:x + w, :3] = sub_
         bg_art = Image.fromarray(a, "RGBA")
         for cx, cy in P.DISPLAY_CELLS:   # the unlit segments under each character
             bg_art.alpha_composite(glyph_cell("~", ghost_only=True), (cx - 3, cy - 4))
-    else:
-        # "TRACK" in the display's font, lit, in a display window (the track number beside it is a picture);
-        # the duck's MIDI channel's window
-        x, y, w, h = P.TRACK_WORD
-        bg_art.alpha_composite(word_image("TRACK", w, h), (x, y))
-        for x, y, w, h in (P.TRACK_DIGIT, P.CH_CELL):
-            ImageDraw.Draw(bg_art).rectangle([x, y, x + w - 1, y + h - 1], fill=WINDOW + (255,))
-    scaled = bg_art.resize((R(P.ART_W * P.K), P.H), Image.LANCZOS)
-    page = Image.new("RGBA", (P.W, P.H), (14, 14, 14, 255))
-    side = side_fill(scaled)
-    left = Image.fromarray(np.repeat(side[:, :1], P.X0, axis=1).astype(np.uint8), "RGB").convert("RGBA")
-    right_w = P.W - P.X0 - scaled.size[0]
-    right = Image.fromarray(np.repeat(side[:, -1:], right_w, axis=1).astype(np.uint8), "RGB").convert("RGBA")
-    page.paste(left, (0, 0))
-    page.paste(right, (P.X0 + scaled.size[0], 0))
-    page.alpha_composite(scaled, (P.X0, 0))
+    part = bg_art.crop((cx0, cy0, cx1, cy1))
+    pw, ph = R((cx1 - cx0) * sx), R((cy1 - cy0) * sy)
+    page = Image.new("RGBA", (P.W, P.H), FINISH + (255,))
+    page.alpha_composite(part.resize((pw, ph), Image.LANCZOS), (0, 0))
+    d = ImageDraw.Draw(page)
+    # the rings, on the page (round whatever the page's stretch)
+    for t, key, cx, cy, size, img, ring in P.KNOBS:
+        if t == tab and ring:
+            rl = ring_layer(knob_px(tab, size))
+            px, py = P.page(tab, cx, cy)
+            page.alpha_composite(rl, (R(px - rl.size[0] / 2), R(py - rl.size[1] / 2)))
+    if tab in P.READOUT:
+        x, y, w, h = P.READOUT[tab]
+        page.alpha_composite(mixer_finish(w, h), (x, y))
+        window(d, (x + 10, y + 6, w - 20, h - 12), 8)
+    if tab == 2:
+        build_mixer_bg(page)
     return page
 
 
-def crop(bg, rect):
-    x, y, w, h = rect
-    return bg.crop((x, y, x + w, y + h)).convert("RGBA")
+def build_mixer_bg(page):
+    y0 = P.MIXER_Y
+    page.alpha_composite(mixer_finish(P.W, P.H - y0), (0, y0))
+    d = ImageDraw.Draw(page)
+    d.line([(0, y0), (P.W, y0)], fill=(60, 60, 60, 255), width=2)
+    for i, x0 in enumerate(P.MIX_STRIPS + [P.MASTER_X]):
+        if i:
+            d.line([(x0 - 2, y0 + 8), (x0 - 2, P.H - 8)], fill=(44, 44, 44, 255), width=2)
+    for i, x0 in enumerate(P.MIX_STRIPS):
+        M = P.MIX
+        nx, ny, nw, nh = M["num"]
+        page.alpha_composite(lit_text(str(i + 1), nw, nh, fit_font("8", nw - 6, nh - 6)), (x0 + nx, y0 + ny))
+        for k, txt in (("pan_label", "PAN"), ("snd_label", "DLY SEND"), ("lvl_label", "LEVEL")):
+            x, y, w, h = M[k]
+            label(d, (x0 + x, y0 + y, w, h), txt, 11)
+        for k in ("pan", "snd"):
+            cx, cy, s = M[k]
+            rl = ring_layer(s)
+            page.alpha_composite(rl, (R(x0 + cx - rl.size[0] / 2), R(y0 + cy - rl.size[1] / 2)))
+        fx, fy, fw, fh = M["fader"]
+        page.alpha_composite(fader_box(fw, fh), (x0 + fx, y0 + fy))
+    x, y, w, h = P.MIX_MASTER["label"]
+    label(d, (x, y0 + y, w, h), "MASTER", 15)
+    fx, fy, fw, fh = P.MIX_MASTER["fader"]
+    page.alpha_composite(fader_box(fw, fh), (fx, y0 + fy))
+
+
+# the artwork's LEVEL slider box (modules_bg.png) and its channel inside it, artwork pixels
+FADER_BOX = (893, 28, 40, 182)
+FADER_CHANNEL = (13, 16, 12, 151)     # x, y, w, h inside the box
+
+
+def fader_box(w, h):
+    x, y, bw, bh = FADER_BOX
+    return art("modules_bg.png").crop((x, y, x + bw, y + bh)).resize((w, h), Image.LANCZOS)
+
+
+def fader_travel(w, h):
+    """the cap's centre's y range inside a fader box of w x h"""
+    _, _, bw, bh = FADER_BOX
+    cx, cy, cw, ch = FADER_CHANNEL
+    k = h / bh
+    return cy * k, (cy + ch) * k
 
 
 # ------------------------------------------------------------------------------------------------ the display font
@@ -156,9 +239,9 @@ def fit_font(text, w, h):
     return font_px(px)
 
 
-def lit_text(text, w, h, f, ghost=True, glow=True, window=True):
+def lit_text(text, w, h, f, ghost=True, glow=True, win=True):
     """text in the display's look, w x h: the window, its unlit segments, the lit ones and their glow"""
-    layer = Image.new("RGBA", (w * SS, h * SS), WINDOW + (255,) if window else (0, 0, 0, 0))
+    layer = Image.new("RGBA", (w * SS, h * SS), WINDOW + (255,) if win else (0, 0, 0, 0))
     big = font_px(round(f.size * SS))
     gb = big.getbbox("~" * len(text))
     ox = (w * SS - (gb[2] - gb[0])) / 2 - gb[0]
@@ -238,11 +321,6 @@ def dot_cell(on):
     return piece, (box[0] // SS, box[1] // SS)
 
 
-def word_image(text, w, h):
-    f = fit_font(text, w, h)
-    return lit_text(text, w, h, f, ghost=True)
-
-
 # ------------------------------------------------------------------------------------------------ keys
 def recolour(img, rgb):
     """a lit key's glass in another colour: its shading kept, the hue the display's"""
@@ -268,6 +346,17 @@ def grey_glass(img_rect_crop, cx, cy, r):
     grey = np.clip(lum / max(top, 1) * 205, 0, 255)[..., None].repeat(3, -1)   # every colour to the same grey glass
     a[..., :3] = a[..., :3] * (1 - m) + grey * m
     return Image.fromarray(a.astype(np.uint8), "RGBA")
+
+
+def round_alpha(img):
+    """a key picture cut to its circle (the front panel's unlit glass, lifted off the panel)"""
+    a = np.asarray(img).copy()
+    h, w = a.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    r = min(w, h) / 2 - 1
+    m = np.clip(r + 0.5 - np.hypot(xx - (w - 1) / 2, yy - (h - 1) / 2), 0, 1)
+    a[..., 3] = (a[..., 3] * m).astype(np.uint8)
+    return Image.fromarray(a, "RGBA")
 
 
 # ------------------------------------------------------------------------------------------------ TUI.json pieces
@@ -298,12 +387,12 @@ KEY_ACTIONS = [action("Mouse Down", "Q-Link"), action("Enter Pressed", "Toggle S
 RADIO_ACTIONS = [action("Mouse Down", "Q-Link")]
 
 
-def definition(key, actions, parts):
+def definition(key, actions, parts, ignore=False):
     return {"key": key, "value": {
         "version": 4, "actions": actions,
         "backgroundData": {"version": 1, "focussed": {"version": 1, "colour": "0", "image": ""},
                            "unfocussed": {"version": 1, "colour": "0", "image": ""}},
-        "ignoreMousePresses": False, "disableCoarseDataWheel": False, "repeats": 1, "hideQLinkBounds": True,
+        "ignoreMousePresses": ignore, "disableCoarseDataWheel": False, "repeats": 1, "hideQLinkBounds": True,
         "componentsData": parts}}
 
 
@@ -316,6 +405,16 @@ def button(on_img, off_img, bid, n, w, h):
     return sub("Button", "Button", {"version": 2, "onImage": on_img, "offImage": off_img, "buttonId": bid,
                                     "numButtonsInGroup": n, "handleName": "Data", "gestureBehaviour": "Instant"},
                bounds_s(0, 0, w, h))
+
+
+def value_label(w, h, px, colour="fb9013"):
+    """MPC's own text: the parameter's value (Titillium Web, the font MPC renders)"""
+    return sub("Value", "Label", {"version": 1, "textStyle": {"version": 1, "font": {"version": 1, "name": "Titillium Web",
+                                                                                  "style": "SemiBold", "height": px},
+                                                            "colour": "ff" + colour,
+                                                            "justification": "horizontallyCentred verticallyCentred",
+                                                            "case": "Original"},
+                                  "type": "Value", "handleName": "Data"}, bounds_s(0, 0, w, h))
 
 
 def placed(dkey, name, index, rect, focus_on=True):
@@ -348,7 +447,7 @@ class Skin:
     def save(self, img, name, rgb=True):
         """write a picture once (identical pictures share one file)"""
         data = img.convert("RGB" if rgb else "RGBA")
-        h = hash(data.tobytes()) ^ hash(data.size)
+        h = hash(data.tobytes()) ^ hash(data.size) ^ hash(rgb)
         if h in self.saved:
             return self.saved[h]
         base, n = name[:-4], 2
@@ -363,12 +462,48 @@ class Skin:
     def opts(self, key):
         return len(self.params[self.index[key]].get("options") or [])
 
+    def has_def(self, key):
+        return any(d["key"] == key for d in self.defs)
+
+
+def knob_strip(sk, img, s):
+    """the transparent filmstrip of a knob picture at s px: 128 frames turning -150..+150 degrees"""
+    name = "bz_knob_%s_%d.png" % (img, s)
+    if name not in sk.used:
+        pic = art("knob_big.png" if img == "big" else "knob_encoder.png")
+        big = pic.resize((s * SS, s * SS), Image.LANCZOS)
+        strip = Image.new("RGBA", (s, s * KNOB_FRAMES), (0, 0, 0, 0))
+        for k in range(KNOB_FRAMES):
+            ang = -KNOB_SPAN + 2 * KNOB_SPAN * k / (KNOB_FRAMES - 1)
+            strip.paste(big.rotate(-ang, resample=Image.BICUBIC).resize((s, s), Image.LANCZOS), (0, k * s))
+        assert strip.size[1] <= 16128
+        strip.save(os.path.join(sk.skin, name))
+        sk.used.add(name)
+    return name
+
+
+def slider_strip(sk, bg, rect, cap, y_top, y_bot, name):
+    """a slider's filmstrip: frames of the slider's own size (the page under it, the cap from the bottom (0) to the
+    top (1)); y_top / y_bot: the cap's centre's range inside the frame. -> (file, frame count)"""
+    x, y, w, h = rect
+    under = bg.crop((x, y, x + w, y + h)).convert("RGBA")
+    frames = min(101, MAX_STRIP // h)
+    strip = Image.new("RGB", (w, h * frames))
+    for k in range(frames):
+        v = k / (frames - 1)
+        fr = under.copy()
+        cy = y_bot + (y_top - y_bot) * v
+        fr.alpha_composite(cap, ((w - cap.size[0]) // 2, R(cy - cap.size[1] / 2)))
+        strip.paste(fr.convert("RGB"), (0, k * h))
+    return sk.save(strip, name), frames
+
 
 def build_page(sk, tab):
     """(the page's background, its components)"""
     bg = make_background(tab)
     kids = []
-    t = "f" if tab == 0 else "m"
+    t = "fmx"[tab]
+    sx, sy = P.scale(tab)
     seen_focus = set()
 
     def place(dkey, name, key, rect):
@@ -376,111 +511,92 @@ def build_page(sk, tab):
         seen_focus.add(key)
         kids.append(placed(dkey, name, sk.index[key], rect, f))
 
-    # ---- knobs: one transparent filmstrip per picture and size, shared by every knob of that size (the ring and the
-    # panel are in the background, as with MPC's own generic knobs)
-    for key, cx, cy, size, img, ring in P.KNOBS[tab]:
-        s = R(size * P.K)
-        pcx, pcy = P.page(cx, cy)
-        x0, y0 = R(pcx - s / 2), R(pcy - s / 2)
-        frames = min(KNOB_FRAMES, MAX_KNOB_STRIP // s)
-        name = "bz_knob_%s_%d.png" % (img, s)
-        if name not in sk.used:
-            pic = art("knob_big.png" if img == "big" else "knob_encoder.png")
-            big = pic.resize((s * SS, s * SS), Image.LANCZOS)
-            strip = Image.new("RGBA", (s, s * frames), (0, 0, 0, 0))
-            for k in range(frames):
-                ang = -KNOB_SPAN + 2 * KNOB_SPAN * k / (frames - 1)
-                strip.paste(big.rotate(-ang, resample=Image.BICUBIC).resize((s, s), Image.LANCZOS), (0, k * s))
-            strip.save(os.path.join(sk.skin, name))
-            sk.used.add(name)
-        tb = s if key in ("sw_rate", "sw_mix") else max(s, 64)   # small knobs: a finger-sized touch box, room allowing
+    def knob(key, pcx, pcy, s, img):
+        name = knob_strip(sk, img, s)
+        tb = max(s, 60)                       # a finger-sized touch box around small knobs
         dkey = "bzKnob_%s_%d_%d" % (img, s, tb)
-        if not any(d["key"] == dkey for d in sk.defs):
-            sk.defs.append(definition(dkey, KNOB_ACTIONS, [focus(tb, tb), filmstrip("Knob", name, frames - 1, s, s, "Vertical",
-                                                                                     (tb - s) // 2, (tb - s) // 2)]))
-        place(dkey, key, key, (x0 - (tb - s) // 2, y0 - (tb - s) // 2, tb, tb))
+        if not sk.has_def(dkey):
+            sk.defs.append(definition(dkey, KNOB_ACTIONS, [focus(tb, tb), filmstrip("Knob", name, KNOB_FRAMES - 1, s, s,
+                                                                                     "Vertical", (tb - s) // 2, (tb - s) // 2)]))
+        place(dkey, key, key, (R(pcx - tb / 2), R(pcy - tb / 2), tb, tb))
 
-    # ---- sliders (MODULES): the thumb along the channel; the top is the maximum
+    # ---- knobs
+    for kt, key, cx, cy, size, img, ring in P.KNOBS:
+        if kt == tab:
+            knob(key, *P.page(tab, cx, cy), knob_px(tab, size), img)
+
+    thumb = art("thumb_v.png")
+    # ---- sliders (MODULES): the cap along the channel; the top is the maximum
     if tab == 1:
-        thumb = art("thumb_v.png")
-        tw, th = R(P.THUMB_V[0] * P.K), R(P.THUMB_V[1] * P.K)
+        tw, th = R(P.THUMB_V[0] * sx), R(P.THUMB_V[1] * sy)
         tpic = thumb.resize((tw, th), Image.LANCZOS)
         for key, x, y0, y1 in P.VSLIDERS:
-            n = sk.opts(key)
-            if n:
+            if sk.opts(key):
                 continue   # option sliders are radio groups (below)
-            px, py0 = P.page(x, y0)
-            _, py1 = P.page(x, y1)
-            w = tw + 14
-            rx, ry, rh = R(px - w / 2), R(py0) - 2, R(py1 - py0) + 4
-            under = crop(bg, (rx, ry, w, rh))
-            frames = min(101, MAX_STRIP // rh)
-            strip = Image.new("RGB", (w, rh * frames))
-            for k in range(frames):
-                v = k / (frames - 1)
-                fr = under.copy()
-                ty = 2 + R((1 - v) * (rh - 4 - th))
-                fr.alpha_composite(tpic, ((w - tw) // 2, ty))
-                strip.paste(fr.convert("RGB"), (0, k * rh))
-            name = sk.save(strip, "bz_m_slider_%s.png" % key)
-            tb = 46
+            px, py0 = P.page(tab, x, y0)
+            _, py1 = P.page(tab, x, y1)
+            w = tw + 18
+            rect = (R(px - w / 2), R(py0) - 2, w, R(py1 - py0) + 4)
+            name, frames = slider_strip(sk, bg, rect, tpic, 2 + th / 2, rect[3] - 2 - th / 2, "bz_m_slider_%s.png" % key)
+            tb = 56
             dkey = "bzSlider_%s" % key
-            sk.defs.append(definition(dkey, KNOB_ACTIONS, [focus(tb, rh), filmstrip("Slider", name, frames, w, rh, "Vertical",
-                                                                                     (tb - w) // 2, 0)]))
-            place(dkey, key, key, (rx - (tb - w) // 2, ry, tb, rh))
+            sk.defs.append(definition(dkey, KNOB_ACTIONS, [focus(tb, rect[3]), filmstrip("Slider", name, frames, w, rect[3],
+                                                                                          "Vertical", (tb - w) // 2, 0)]))
+            place(dkey, key, key, (rect[0] - (tb - w) // 2, rect[1], tb, rect[3]))
 
     # ---- option controls: radio groups of pictures
-    def radio(key, zones, draw_on, draw_off=None, label=None):
+    def radio(key, zones, draw_on, draw_off=None, lab=None):
         """zones: page rects per option; draw_on(i, img, rect) draws option i selected onto a copy of its zone"""
         n = len(zones)
         for i, rect in enumerate(zones):
-            off = crop(bg, rect)
+            off = bg.crop((rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3])).convert("RGBA")
             if draw_off:
                 draw_off(i, off, rect)
             on = off.copy()
             draw_on(i, on, rect)
-            on_n = sk.save(on, "bz_%s_opt_%s_%s_%d_on.png" % (t, key, label, i))
-            off_n = sk.save(off, "bz_%s_opt_%s_%s_%d_off.png" % (t, key, label, i))
-            dkey = "bzOpt_%s_%s_%d_%s" % (t, key, i, label or "")
+            on_n = sk.save(on, "bz_%s_opt_%s_%s_%d_on.png" % (t, key, lab, i))
+            off_n = sk.save(off, "bz_%s_opt_%s_%s_%d_off.png" % (t, key, lab, i))
+            dkey = "bzOpt_%s_%s_%d_%s" % (t, key, i, lab or "")
             sk.defs.append(definition(dkey, RADIO_ACTIONS, [button(on_n, off_n, i, n, rect[2], rect[3])]))
             place(dkey, "%s %d" % (key, i), key, rect)
 
     def thumb_at(img, rect, pos, pic):
-        px, py = P.page(*pos)
+        px, py = P.page(tab, *pos)
         img.alpha_composite(pic, (R(px - pic.size[0] / 2) - rect[0], R(py - pic.size[1] / 2) - rect[1]))
 
-    tv = art("thumb_v.png")
-    sw_pic = tv.resize((R(P.THUMB_SW[0] * P.K), R(P.THUMB_SW[1] * P.K)), Image.LANCZOS)
-    sl_pic = tv.resize((R(P.THUMB_V[0] * P.K), R(P.THUMB_V[1] * P.K)), Image.LANCZOS)
-    sync_pic = art("thumb_h.png").resize((R(P.THUMB_SYNC[0] * P.K), R(P.THUMB_SYNC[1] * P.K)), Image.LANCZOS)
+    def paste_look(img, zone_rect, art_rect, look):
+        """an artwork-scale look (H x W x 3 array) at its place inside a zone picture"""
+        x, y, w, h = [R(v) for v in art_rect]
+        pic = Image.fromarray(np.asarray(look).astype(np.uint8), "RGB").convert("RGBA")
+        pr = prect(tab, x, y, w, h)
+        pic = pic.resize((pr[2], pr[3]), Image.LANCZOS)
+        img.alpha_composite(pic, (pr[0] - zone_rect[0], pr[1] - zone_rect[1]))
+
+    sw_pic = thumb.resize((R(P.THUMB_SW[0] * sx), R(P.THUMB_SW[1] * sy)), Image.LANCZOS)
+    sl_pic = thumb.resize((R(P.THUMB_V[0] * sx), R(P.THUMB_V[1] * sy)), Image.LANCZOS)
+    sync_pic = art("thumb_h.png").resize((R(P.THUMB_SYNC[0] * sx), R(P.THUMB_SYNC[1] * sy)), Image.LANCZOS)
 
     for st_tab, key, thumbs, zones, orient in P.SWITCHES:
-        if st_tab != tab:
-            continue
-        pz = [prect(*z) for z in zones]
-        radio(key, pz, lambda i, img, rect, th=thumbs: thumb_at(img, rect, th[i], sw_pic), label="sw")
+        if st_tab == tab:
+            radio(key, [prect(tab, *z) for z in zones], lambda i, img, rect, th=thumbs: thumb_at(img, rect, th[i], sw_pic), lab="sw")
 
     if tab == 1:
-        bars = {b[0]: b for b in P.BARS}
+        src = art("modules_bg.png")
         hs = {h[0]: h for h in P.HSLIDERS}
         for key, bx, by, bw, bh, n in P.BARS:
             hx0, hy, hx1 = hs[key][1:]
-            # the column of each option: its part of the bar and the slider under it
             col_w = bw / n
             thumbs = [(hx0 + 4.5 + i * (hx1 - hx0 - 9) / (n - 1), hy) for i in range(n)]
             seg_rects = [(bx + i * col_w, by, col_w, bh) for i in range(n)]
-            looks = bar_looks(art("modules_bg.png"), seg_rects)
-            # the bar: tap an option (the selected one is the white box)
-            radio(key, [prect(bx + i * col_w, by - 2, col_w, bh + 4) for i in range(n)],
+            looks = bar_looks(src, seg_rects)
+            radio(key, [prect(tab, bx + i * col_w, by - 2, col_w, bh + 4) for i in range(n)],
                   lambda i, img, rect, seg_rects=seg_rects, looks=looks: paste_look(img, rect, seg_rects[i], looks[i][1]),
                   lambda i, img, rect, seg_rects=seg_rects, looks=looks: paste_look(img, rect, seg_rects[i], looks[i][0]),
-                  label="bar")
-            # the slider under it: a stretch of the channel per option, its thumb on the selected one
-            sw = (hx1 - hx0 + 8) / n
-            radio(key, [prect(hx0 - 4 + i * sw, hy - 10, sw, 20) for i in range(n)],
-                  lambda i, img, rect, thumbs=thumbs: thumb_at(img, rect, thumbs[i], sl_pic), label="hs")
-        # the same options on the top row's vertical sliders: DRIVE POS (2) and CURVE (3); OSC MODE with its labels
-        lab = {k: v for k, v in P.LABEL_OPTS}
+                  lab="bar")
+            sw_ = (hx1 - hx0 + 8) / n
+            radio(key, [prect(tab, hx0 - 4 + i * sw_, hy - 10, sw_, 20) for i in range(n)],
+                  lambda i, img, rect, thumbs=thumbs: thumb_at(img, rect, thumbs[i], sl_pic), lab="hs")
+        labs = {k: v for k, v in P.LABEL_OPTS}
         for key, x, y0, y1 in P.VSLIDERS:
             n = sk.opts(key)
             if not n:
@@ -488,30 +604,30 @@ def build_page(sk, tab):
             step = (y1 - y0) / n
             thumbs = [(x, y0 + 8.5 + i * (y1 - y0 - 17) / (n - 1)) for i in range(n)]
             if key == "osc_mode":
-                zones = [prect(0, y0 - 14, 72, step + 14)] + [prect(0, y0 + i * step, 72, step) for i in range(1, n)]
-                looks = label_looks(art("modules_bg.png"), lab["osc_mode"])
+                zones = [prect(tab, 0, y0 - 14, 72, step + 14)] + [prect(tab, 0, y0 + i * step, 72, step) for i in range(1, n)]
+                looks = bar_looks(src, labs["osc_mode"])
             else:
-                zones = [prect(x - 22, y0 + i * step, 44, step) for i in range(n)]
+                zones = [prect(tab, x - 22, y0 + i * step, 44, step) for i in range(n)]
                 looks = None
 
             def on_draw(i, img, rect, thumbs=thumbs, looks=looks, key=key):
                 if looks:
-                    paste_look(img, rect, lab[key][i], looks[i][1])
+                    paste_look(img, rect, labs[key][i], looks[i][1])
                 thumb_at(img, rect, thumbs[i], sl_pic)
 
             def off_draw(i, img, rect, looks=looks, key=key):
                 if looks:
-                    paste_look(img, rect, lab[key][i], looks[i][0])
+                    paste_look(img, rect, labs[key][i], looks[i][0])
 
-            radio(key, zones, on_draw, off_draw, label="v")
+            radio(key, zones, on_draw, off_draw, lab="v")
         # FREE / TEMPO
-        sx, sy0, sy1 = P.SYNC_SLOT
-        zones = [prect(938, 285, 54, 64), prect(938, 349, 54, 60)]
-        thumbs = [(sx, sy0 + 6), (sx, sy1 - 6)]
-        looks = label_looks(art("modules_bg.png"), lab["mod_sync"])
+        sxx, sy0, sy1 = P.SYNC_SLOT
+        zones = [prect(tab, 938, 285, 54, 64), prect(tab, 938, 349, 54, 60)]
+        thumbs = [(sxx, sy0 + 6), (sxx, sy1 - 6)]
+        looks = bar_looks(src, labs["mod_sync"])
         radio("mod_sync", zones,
-              lambda i, img, rect: (paste_look(img, rect, lab["mod_sync"][i], looks[i][1]), thumb_at(img, rect, thumbs[i], sync_pic)),
-              lambda i, img, rect: paste_look(img, rect, lab["mod_sync"][i], looks[i][0]), label="sync")
+              lambda i, img, rect: (paste_look(img, rect, labs["mod_sync"][i], looks[i][1]), thumb_at(img, rect, thumbs[i], sync_pic)),
+              lambda i, img, rect: paste_look(img, rect, labs["mod_sync"][i], looks[i][0]), lab="sync")
 
     # ---- keys
     lit_big = recolour(art("btn_lit_big.png"), LIT)
@@ -519,45 +635,64 @@ def build_page(sk, tab):
     for key, (ktab, cx, cy, dia) in P.KEYS.items():
         if ktab != tab:
             continue
-        pcx, pcy = P.page(cx, cy)
-        box = R(max(dia + 10, 52) * P.K) if tab == 0 else R(46 * P.K)
-        rect = (R(pcx - box / 2), R(pcy - box / 2), box, box)
-        off = crop(bg, rect)
-        if tab == 0:
-            src = lit_big if dia > 50 else lit_small
-            d = R(src.size[0] * P.K)
-            g = src.resize((d, R(src.size[1] * P.K)), Image.LANCZOS)
+        pcx, pcy = P.page(tab, cx, cy)
+        if tab == 0:   # the printed keys, stretched with the page: the lit glass stretched the same
+            bw_, bh_ = R(min(max(dia + 10, 52), 59) * sx), R(max(dia + 10, 52) * sy)   # 59: the step keys' pitch
+            rect = (R(pcx - bw_ / 2), R(pcy - bh_ / 2), bw_, bh_)
+            off = bg.crop((rect[0], rect[1], rect[0] + bw_, rect[1] + bh_)).convert("RGBA")
+            src_ = lit_big if dia > 50 else lit_small
+            g = src_.resize((R(src_.size[0] * sx), R(src_.size[1] * sy)), Image.LANCZOS)
             on = off.copy()
             on.alpha_composite(g, (R(pcx - g.size[0] / 2) - rect[0], R(pcy - g.size[1] / 2) - rect[1]))
         else:
-            on = off
-            off = grey_glass(off, pcx - rect[0], pcy - rect[1], dia / 2 * P.K + 1)
+            box = R(46 * sx)
+            rect = (R(pcx - box / 2), R(pcy - box / 2), box, box)
+            on = bg.crop((rect[0], rect[1], rect[0] + box, rect[1] + box)).convert("RGBA")
+            off = grey_glass(on, pcx - rect[0], pcy - rect[1], dia / 2 * sx + 1)
         on_n = sk.save(on, "bz_%s_key_%s_on.png" % (t, key))
         off_n = sk.save(off, "bz_%s_key_%s_off.png" % (t, key))
         dkey = "bzKey_%s" % key
-        sk.defs.append(definition(dkey, KEY_ACTIONS, [focus(box, box), button(on_n, off_n, 1, 1, box, box)]))
+        sk.defs.append(definition(dkey, KEY_ACTIONS, [focus(rect[2], rect[3]), button(on_n, off_n, 1, 1, rect[2], rect[3])]))
         place(dkey, key, key, rect)
 
-    # ---- the MODULES page's tap areas: TRACK (the next track), MIDI CH (the next channel)
-    if tab == 1:
-        for key, (ktab, x, y, w, h) in P.TAPS.items():
-            rect = prect(x, y, w, h)
-            off = crop(bg, rect)
-            a = np.asarray(off).astype(np.float32)
-            a[..., :3] = np.clip(a[..., :3] * 1.25 + 12, 0, 255)
-            on = Image.fromarray(a.astype(np.uint8), "RGBA")
-            on_n = sk.save(on, "bz_m_tap_%s_on.png" % key)
-            off_n = sk.save(off, "bz_m_tap_%s_off.png" % key)
-            dkey = "bzTap_%s" % key
-            sk.defs.append(definition(dkey, KEY_ACTIONS, [focus(rect[2], rect[3]), button(on_n, off_n, 1, 1, rect[2], rect[3])]))
-            place(dkey, key, key, rect)
+    # ---- the selectors in the display's font: TRACK (MODULES), the duck's MIDI CH (FX MIXER)
+    def selector(key, sel, texts, prefix_w=0):
+        st, x, y, w, h = sel
+        rect = prect(tab, x, y, w, h)
+        f = fit_font(max(texts, key=len), rect[2] - 10, rect[3] - 8)
+        strip = Image.new("RGB", (rect[2], rect[3] * len(texts)))
+        for i, txt in enumerate(texts):
+            strip.paste(lit_text(txt, rect[2], rect[3], f).convert("RGB"), (0, i * rect[3]))
+        name = sk.save(strip, "bz_%s_sel_%s.png" % (t, key))
+        dkey = "bzSel_%s" % key
+        sk.defs.append(definition(dkey, KNOB_ACTIONS, [focus(rect[2], rect[3]),
+                                                       filmstrip("Selector", name, len(texts), rect[2], rect[3])]))
+        place(dkey, key, key, rect)
 
-    # ---- the characters
+    if tab == 1:
+        selector("track", P.TRACK_SEL, ["TRACK %d" % (i + 1) for i in range(8)])
+    if tab == 2:
+        selector("gd_ch", P.CH_SEL, ["%2d" % (i + 1) for i in range(16)])
+
+    # ---- the readout: MPC's text, the control last touched
+    if tab in P.READOUT:
+        x, y, w, h = P.READOUT[tab]
+        rect = (x + 20, y + 8, w - 40, h - 16)
+        px = 58 if h > 60 else 30
+        dkey = "bzReadout_%d" % h
+        sk.defs.append(definition(dkey, [], [value_label(rect[2], rect[3], px)], ignore=True))
+        kids.append(placed(dkey, "readout", sk.index["readout"], rect, False))
+
+    # ---- the mixer (FX MIXER)
+    if tab == 2:
+        build_mixer(sk, bg, kids, place, knob, thumb)
+
+    # ---- the PANEL's characters
     if tab == 0:
         glyphs = gen_params.GLYPHS
         for ci, (cx, cy) in enumerate(P.DISPLAY_CELLS):
-            rect = prect(cx - 3, cy - 4, P.CELL_W + 6, P.CELL_H + 8)
-            under = crop(bg, rect)
+            rect = prect(tab, cx - 3, cy - 4, P.CELL_W + 6, P.CELL_H + 8)
+            under = bg.crop((rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3])).convert("RGBA")
             for gi, ch in enumerate(glyphs):
                 cell = glyph_cell(ch, ghost=False).resize((rect[2], rect[3]), Image.LANCZOS)
                 im = under.copy()
@@ -566,30 +701,57 @@ def build_page(sk, tab):
                 kids.append(picture(name, rect, sk.index["disp%d" % (ci + 1)], gi, len(glyphs)))
         for ci, (cx, cy) in enumerate(P.DISPLAY_CELLS):
             piece, (ox, oy) = dot_cell(True)
-            r = prect(cx - 3 + ox, cy - 4 + oy, piece.size[0], piece.size[1])
-            im = crop(bg, r)
+            r = prect(tab, cx - 3 + ox, cy - 4 + oy, piece.size[0], piece.size[1])
+            im = bg.crop((r[0], r[1], r[0] + r[2], r[1] + r[3])).convert("RGBA")
             im.alpha_composite(piece.resize((r[2], r[3]), Image.LANCZOS))
             name = sk.save(im, "bz_f_dot_on.png")
             kids.append(picture(name, r, sk.index["dot%d" % (ci + 1)], 1, 2))
-    else:
-        x, y, w, h = P.TRACK_DIGIT
-        rect = prect(x, y, w, h)
-        f = fit_font("8", w, h)
-        for i in range(8):
-            im = crop(bg, rect)
-            im.alpha_composite(lit_text(str(i + 1), w, h, f).resize((rect[2], rect[3]), Image.LANCZOS))
-            name = sk.save(im, "bz_m_track_%d.png" % i)
-            kids.append(picture(name, rect, sk.index["track"], i, 8))
-        x, y, w, h = P.CH_CELL
-        rect = prect(x, y, w, h)
-        f = fit_font("88", w, h)
-        for i in range(16):
-            txt = str(i + 1)
-            im = crop(bg, rect)
-            im.alpha_composite(lit_text(txt.rjust(2) if len(txt) < 2 else txt, w, h, f).resize((rect[2], rect[3]), Image.LANCZOS))
-            name = sk.save(im, "bz_m_ch_%d.png" % i)
-            kids.append(picture(name, rect, sk.index["gd_ch"], i, 16))
     return bg, kids
+
+
+def build_mixer(sk, bg, kids, place, knob, thumb):
+    y0 = P.MIXER_Y
+    M = P.MIX
+    unlit = round_alpha(art("front_bg.png").crop((899 - 24, 51 - 24, 899 + 24, 51 + 24)))   # LINK's unlit glass
+    lit = recolour(art("btn_lit_small.png"), LIT)
+
+    def fader(key, rect):
+        x, y, w, h = rect
+        t0, t1 = fader_travel(w, h)
+        cap = thumb.resize((R(w * 0.36), R(w * 0.36 * 25 / 14)), Image.LANCZOS)   # the artwork's cap, its shape kept
+        name, frames = slider_strip(sk, bg, rect, cap, t0, t1, "bz_x_fader_%s.png" % key)
+        dkey = "bzFader_%s" % key
+        sk.defs.append(definition(dkey, KNOB_ACTIONS, [focus(w + 16, h), filmstrip("Fader", name, frames, w, h, "Vertical", 8, 0)]))
+        place(dkey, key, key, (x - 8, y, w + 16, h))
+
+    def mkey(key, rect, txt):
+        x, y, w, h = rect
+        d = 30
+        off = bg.crop((x, y, x + w, y + h)).convert("RGBA")
+        on = off.copy()
+        gx, gy = (w - d) // 2, 2
+        off.alpha_composite(unlit.resize((d, d), Image.LANCZOS), (gx, gy))
+        on.alpha_composite(lit.resize((d + 2, d + 2), Image.LANCZOS), (gx - 1, gy - 1))
+        for im in (off, on):
+            label(ImageDraw.Draw(im), (0, gy + d + 2, w, h - gy - d - 2), txt, 11)
+        on_n = sk.save(on, "bz_x_key_%s_on.png" % key)
+        off_n = sk.save(off, "bz_x_key_%s_off.png" % key)
+        dkey = "bzKey_%s" % key
+        sk.defs.append(definition(dkey, KEY_ACTIONS, [focus(w, h), button(on_n, off_n, 1, 1, w, h)]))
+        place(dkey, key, key, rect)
+
+    for i, x0 in enumerate(P.MIX_STRIPS):
+        n = i + 1
+        for k, key in (("pan", "mix_pan%d" % n), ("snd", "mix_snd%d" % n)):
+            cx, cy, s = M[k]
+            knob(key, x0 + cx, y0 + cy, s, "big")
+        fx, fy, fw, fh = M["fader"]
+        fader("mix_lvl%d" % n, (x0 + fx, y0 + fy, fw, fh))
+        for k, txt in (("mute", "MUTE"), ("solo", "SOLO")):
+            x, y, w, h = M[k]
+            mkey("%s%d" % (k, n), (x0 + x, y0 + y, w, h), txt)
+    fx, fy, fw, fh = P.MIX_MASTER["fader"]
+    fader("mix_master", (fx, y0 + fy, fw, fh))
 
 
 # ------------------------------------------------------------------------------------------------ selector looks
@@ -621,19 +783,6 @@ def bar_looks(src, rects):
             sel = s_box + t * (s_text - s_box)
             looks.append((printed, np.repeat(sel[..., None], 3, -1)))
     return looks
-
-
-def label_looks(src, rects):
-    return bar_looks(src, rects)
-
-
-def paste_look(img, zone_rect, art_rect, look):
-    """put an artwork-scale look (H x W x 3 array) at its place inside a zone picture"""
-    x, y, w, h = [R(v) for v in art_rect]
-    pic = Image.fromarray(np.asarray(look).astype(np.uint8), "RGB").convert("RGBA")
-    pr = prect(x, y, w, h)
-    pic = pic.resize((pr[2], pr[3]), Image.LANCZOS)
-    img.alpha_composite(pic, (pr[0] - zone_rect[0], pr[1] - zone_rect[1]))
 
 
 # ------------------------------------------------------------------------------------------------ main

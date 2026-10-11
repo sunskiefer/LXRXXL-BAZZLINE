@@ -72,6 +72,13 @@ static float read_value(const ParamMap *m, const char *v)
     return clampf(f, 0, 1);
 }
 
+/* the parameters the readout follows: values (not keys or the display) */
+static int m_kind_editable(int i)
+{
+    const int k = PARAM_MAP[i].kind;
+    return k == PK_SOUND || k == PK_GLOBAL || k == PK_MIX || (k == PK_UI && PARAM_MAP[i].id != UI_TRACK);
+}
+
 static void set_param(void *p, const char *k, const char *v)
 {
     Inst *in = p;
@@ -101,6 +108,15 @@ static void set_param(void *p, const char *k, const char *v)
             if (m->id == UI_TRACK) ui_press(x, B_TRK1 + (int)read_value(m, v));
             else ui_knob(x, m->id == UI_SEL ? 0 : 1, (float)atof(v));
             break;
+        case PK_MIX: {
+            const float f = read_value(m, v);
+            const int t = m->id % 8, w = m->id / 8;
+            if (m->id == 24) x->p.master = f;
+            else if (w == 0) x->p.snd[t].v[SP_LEVEL] = f;
+            else if (w == 1) x->p.snd[t].v[SP_PAN] = f;
+            else x->p.send[t] = f;
+            break;
+        }
         case PK_BUTTON:
             /* a tap: whatever value the host sends is a press (the key's picture is its LED, which the host toggled on
              * its own: report the real LED again a moment after the tap so the picture follows it) */
@@ -110,6 +126,7 @@ static void set_param(void *p, const char *k, const char *v)
         default: break;   /* the display's pictures: read-only */
         }
     }
+    if (m_kind_editable(i)) ui_touch(x, i);
     x->displayRev++;
 }
 
@@ -124,7 +141,7 @@ static int get_param(void *p, const char *k, char *buf, int n)
 {
     Inst *in = p;
     Bl *x = &in->x;
-    char t[64];
+    char t[64], t2[32];
     int i, on;
     if (!strcmp(k, "state")) {
         int len = 0, r = 0;
@@ -159,10 +176,18 @@ static int get_param(void *p, const char *k, char *buf, int n)
             if (m->id == UI_TRACK) snprintf(t, sizeof t, "%d", x->ui.track);
             else snprintf(t, sizeof t, "%.5f", ui_knobGet(x, m->id == UI_SEL ? 0 : 1));
             return put(buf, n, t);
+        case PK_MIX: {
+            const int t = m->id % 8, w = m->id / 8;
+            const float v = m->id == 24 ? x->p.master : w == 0 ? x->p.snd[t].v[SP_LEVEL] : w == 1 ? x->p.snd[t].v[SP_PAN] : x->p.send[t];
+            if (on) return 0;
+            snprintf(t2, sizeof t2, "%.5f", v);
+            return put(buf, n, t2);
+        }
         case PK_SHOW: {
             char d[4];
             uint8_t dots;
             if (on) return 0;
+            if (m->id == SH_READOUT) { char ro[96]; ui_readout(x, ro, sizeof ro); return put(buf, n, ro); }
             ui_display(x, d, &dots);
             if (m->id <= SH_DISP3) {
                 const char *g = strchr(GLYPHS, d[m->id - SH_DISP1]);

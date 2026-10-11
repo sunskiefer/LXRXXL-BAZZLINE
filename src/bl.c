@@ -36,6 +36,8 @@ void bl_initProject(Project *p)
     for (i = 0; i < G_COUNT; i++) p->g[i] = GLOBAL_DEFS[i].def;
     p->bpm = 0;
     p->gdOn = 0;
+    for (t = 0; t < NUM_TRACKS; t++) p->send[t] = 1.f;
+    p->master = 0.8f;
 }
 
 void bl_init(Bl *x)
@@ -54,6 +56,7 @@ void bl_init(Bl *x)
     x->seq.rng = 0x51ED270Bu;
     x->rnd = 0x7F4A7C15u;
     x->seq.hostTempo = 120;
+    x->touched = -1;
     bl_factory(x);
     ui_init(x);
 }
@@ -66,23 +69,52 @@ static inline float soft(float v)
     return v * (27.f + v * v) / (27.f + 9.f * v * v);
 }
 
+/* a track is heard unless muted, or while any track is soloed, unless soloed */
+static int audible(Bl *x, int t)
+{
+    if (x->p.mutes & (1u << t)) return 0;
+    return !x->p.solos || (x->p.solos & (1u << t));
+}
+
 void bl_render(Bl *x, float *L, float *R, int n)
 {
-    int done = 0, t, guard = 0;
+    int done = 0, t, i, guard = 0;
+    float sL[128], sR[128], vL[128], vR[128];
+    if (n > 128) n = 128;
     memset(L, 0, sizeof(float) * (size_t)n);
     memset(R, 0, sizeof(float) * (size_t)n);
+    memset(sL, 0, sizeof sL);
+    memset(sR, 0, sizeof sR);
     while (done < n && guard++ < 4096) {
         const double d = seq_nextEventIn(x);
         int chunk = n - done;
         if (d < chunk) chunk = (int)ceil(d - 1e-9);
         if (chunk > 0) {
             const float bpm = bl_tempo(x);
-            for (t = 0; t < NUM_TRACKS; t++) voice_render(&x->v[t], &x->p.snd[t], bpm, L + done, R + done, chunk);
+            for (t = 0; t < NUM_TRACKS; t++) {
+                if (!x->v[t].active) continue;
+                memset(vL, 0, sizeof(float) * (size_t)chunk);
+                memset(vR, 0, sizeof(float) * (size_t)chunk);
+                voice_render(&x->v[t], &x->p.snd[t], bpm, vL, vR, chunk);
+                if (!audible(x, t)) continue;
+                {
+                    const float snd = x->p.send[t];
+                    for (i = 0; i < chunk; i++) {
+                        L[done + i] += vL[i];
+                        R[done + i] += vR[i];
+                        sL[done + i] += vL[i] * snd;
+                        sR[done + i] += vR[i] * snd;
+                    }
+                }
+            }
         }
         seq_advance(x, chunk, done);
         done += chunk;
     }
-    fx_render(x, L, R, n);
-    for (t = 0; t < n; t++) { L[t] = soft(L[t] * 0.8f); R[t] = soft(R[t] * 0.8f); }
+    fx_render(x, L, R, sL, sR, n);
+    {
+        const float m = x->p.master * 1.25f;
+        for (t = 0; t < n; t++) { L[t] = soft(L[t] * 0.8f * m); R[t] = soft(R[t] * 0.8f * m); }
+    }
     x->clock += (uint32_t)n;
 }

@@ -97,7 +97,23 @@ enum {
     B_GD_ON = 39,
     B_TRK_NEXT = 40,
     B_CH_NEXT = 41,
-    NUM_BUTTONS = 42
+    B_MUTE1 = 42,
+    B_MUTE2 = 43,
+    B_MUTE3 = 44,
+    B_MUTE4 = 45,
+    B_MUTE5 = 46,
+    B_MUTE6 = 47,
+    B_MUTE7 = 48,
+    B_MUTE8 = 49,
+    B_SOLO1 = 50,
+    B_SOLO2 = 51,
+    B_SOLO3 = 52,
+    B_SOLO4 = 53,
+    B_SOLO5 = 54,
+    B_SOLO6 = 55,
+    B_SOLO7 = 56,
+    B_SOLO8 = 57,
+    NUM_BUTTONS = 58
 };
 #define GLYPHS " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-+/"
 #define NUM_GLYPHS 40
