@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.1
+# LXRXXL BAZZLINE v0.2.2
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
@@ -7,12 +7,12 @@
 **An 8-track bass synth for the Akai Force and MPC (MPC OS 3.x, VST2 through
 [mpc-vst-plugins](https://github.com/sd88me/mpc-vst-plugins)).**
 
-LXRXXL BAZZLINE is a variation of [LXRXXL](https://github.com/sunskiefer/LXR02XXL), the LXR-02 port. It keeps
-LXRXXL's LXR-02 style step sequencer, its way of running on the Force (MPC's grid and transport, the panel on the
-touchscreen, the project saved with MPC's) and the LXR's voice system. The drum voices are replaced by eight bass
-voices, built with the open-source Erica Synths Bassline in mind: VCO, sub, noise, swarm, drive, a Polivoks-style
-filter, accent and slide. It is meant for bass: acid, DB-01-style lines, subs, Reese, FM and 808-style basses. It also
-has a delay and a gate/duck triggered by MIDI.
+LXRXXL BAZZLINE is a variation of [LXRXXL](https://github.com/sunskiefer/LXR02XXL), a port of the open-source Sonic
+Potions LXR engine inspired by the Erica Synths LXR-02. It keeps LXRXXL's LXR-02 style step sequencer, its way of
+running on the Force (MPC's grid and transport, the panel on the touchscreen, the project saved with MPC's) and the
+LXR's voice system. The drum voices are replaced by eight bass voices, inspired by the Erica Synths Bassline DB-01:
+VCO, sub, noise, swarm, drive, a Polivoks-style filter, accent and slide. It is meant for bass: acid, DB-01-style
+lines, subs, Reese, FM and 808-style basses. It also has a delay and a gate/duck triggered by MIDI.
 
 > [!IMPORTANT]
 > **This is not a DB-01.** The artwork is inspired by the Erica Synths Bassline DB-01, but it is not a copy of the

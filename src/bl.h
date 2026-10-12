@@ -1,10 +1,11 @@
 /* LXRXXL BAZZLINE -- one instance: the project in RAM, eight bass voices, the sequencer, the delay, the gate/duck and
  * the front panel.
  *
- * A variation of LXRXXL (the LXR-02 port): the same LXR-02 style step sequencer, panel and Force integration, with the
- * drum voices replaced by bass voices built after the open-source Erica Synths Bassline (DB-01) signal path. None of
- * Erica's firmware is used: the voices, the delay and the gate/duck are written here from the DB-01 and DIY Delay
- * manuals. The oscillator's band-limited tables are the LXR's own (third_party/lxr02open wavetable.c). */
+ * A variation of LXRXXL (the open-source LXR engine, inspired by the LXR-02): the same LXR-02 style step sequencer,
+ * panel and Force integration, with the drum voices replaced by bass voices inspired by the Erica Synths Bassline
+ * DB-01's signal path. None of Erica's firmware is used: the voices, the delay and the gate/duck are written here
+ * from the DB-01 and DIY Delay manuals. The oscillator's band-limited tables are the LXR's own
+ * (third_party/lxr02open wavetable.c). */
 #pragma once
 #include <stdint.h>
 #include <stddef.h>

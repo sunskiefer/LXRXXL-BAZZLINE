@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+- PANEL artwork: the small "LXR-02" text (bottom left) is off the panel.
+- README, catalog and source wording: LXRXXL is a port of the open-source Sonic Potions LXR engine inspired by the
+  Erica Synths LXR-02, and the bass voices are inspired by the Erica Synths Bassline DB-01.
+
 ## 0.2.1
 - PANEL artwork: the SONIC POTIONS X ERICA SYNTHS legend is off the panel (the credits stay in the documentation).
 - Tested on an Akai Force (MPC OS 3.9.1): the same build as 0.2.0, only the artwork changed.
