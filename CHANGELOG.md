@@ -2,6 +2,7 @@
 
 ## 0.2.1
 - PANEL artwork: the SONIC POTIONS X ERICA SYNTHS legend is off the panel (the credits stay in the documentation).
+- Tested on an Akai Force (MPC OS 3.9.1): the same build as 0.2.0, only the artwork changed.
 
 ## 0.2.0
 - Tested on an Akai Force (MPC OS 3.9.1).

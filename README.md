@@ -293,7 +293,7 @@ The tools:
 
 ## Testing
 
-On a device: 0.2.0 on an Akai Force, MPC OS 3.9.1 (`tested.json`).
+On a device: 0.2.0 and 0.2.1 (the same build, only the PANEL artwork changed) on an Akai Force, MPC OS 3.9.1 (`tested.json`).
 
 Offline, every build (`test/run_tests.sh`, and in CI):
 - **The framework's host test:** two instances, names, set/get, option stepping, notes into audio, the chunk.
