@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.2.8
+- Tested on an Akai Force (MPC OS 3.9.1).
 - PANEL: the VOICE RESET button sits on its bezel exactly as in Suns Kiefer's artwork (it was 4 px off).
 
 ## 0.2.7
