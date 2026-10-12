@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.3
+# LXRXXL BAZZLINE v0.2.4
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
@@ -134,21 +134,27 @@ There is no threshold: a MIDI trigger is always on.
 
 ### Q-Links
 
-Every parameter of every page is on the Q-Links, in reading order: from the top left, row by row, left to right. A
-page with more than 16 parameters has more than one Q-Link page, each with its own name in MPC's page strip under
-the plugin (PANEL 1, PANEL 2, MODULES 1, MODULES 2, FX, PAN SEND, LEVELS): pick one there and the Q-Links follow it.
-The screen is the same for a page's Q-Link pages. On the Force, bank 1 is the first 8 of the list and bank 2 the next
-8.
+Every parameter of every page is on the Q-Links, in reading order (from the top left, row by row, left to right),
+**8 per Q-Link page: one Force knob bank, knobs 1-8**, so there is no hidden second bank. Pick a Q-Link page in
+MPC's page strip under the plugin (PANEL 1, PANEL 2... the dots); the knobs then turn the controls of that page, and
+**each of them shows an orange number on the screen: the knob (1-8) that turns it**. A control without a number is
+on another Q-Link page of the same screen.
 
-| Page | Q-Links |
-|---|---|
-| PANEL: **PANEL 1** | DRY/WET, DELAY TIME, RELEASE, GATE/DUCK, DRIVE, DETUNE, VCA ENV, WAVE, FILTER, VCF ENV, RESONANCE, CUTOFF |
-| PANEL: **PANEL 2** | FM LVL, SUB LVL, NOISE LVL, SELECT/GATE, BACK/NOTE, LFO RATE, LFO LVL, ENV/CV LVL |
-| MODULES: **MODULES 1** | TRACK, OSC MODE, FM RATIO, WAVE POS, DRIVE, SUB LVL, TONE, ACCENT, SWEEP, SLIDE TIME, VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC |
-| MODULES: **MODULES 2** | LEVEL, PAN, DRIVE POS, CURVE, FILTER MODEL, KEY TRACK, SWARM RATE, SWARM MODE, DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
-| FX MIXER: **FX** | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, PRESET SLOT, GATE/DUCK, DEPTH, HOLD, ATTACK, RELEASE, DELAY MODE, DUCK MIDI CH |
-| FX MIXER: **PAN SEND** | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8, DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
-| FX MIXER: **LEVELS** | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8, MASTER |
+| Page | Q-Link page | Knobs 1-8 |
+|---|---|---|
+| PANEL | **PANEL 1** | DRY/WET, DELAY TIME, RELEASE, GATE/DUCK, DRIVE, DETUNE, VCA ENV, WAVE |
+| PANEL | **PANEL 2** | FILTER, VCF ENV, RESONANCE, CUTOFF, FM LVL, SUB LVL, NOISE LVL, SELECT/GATE |
+| PANEL | **PANEL 3** | BACK/NOTE, LFO RATE, LFO LVL, ENV/CV LVL |
+| MODULES | **MODULES 1** | TRACK, OSC MODE, FM RATIO, WAVE POS, DRIVE, SUB LVL, TONE, ACCENT |
+| MODULES | **MODULES 2** | SWEEP, SLIDE TIME, VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC |
+| MODULES | **MODULES 3** | LEVEL, PAN, DRIVE POS, CURVE, FILTER MODEL, KEY TRACK, SWARM RATE, SWARM MODE |
+| MODULES | **MODULES 4** | DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
+| FX MIXER | **FX 1** | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, PRESET SLOT, GATE/DUCK, DEPTH, HOLD |
+| FX MIXER | **FX 2** | ATTACK, RELEASE, DELAY MODE, DUCK MIDI CH |
+| FX MIXER | **PAN** | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8 |
+| FX MIXER | **SEND** | DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
+| FX MIXER | **LEVEL** | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8 |
+| FX MIXER | **MASTER** | MASTER |
 
 The keys (step keys, TRACK 1-8, MUTE/SOLO, SAVE/LOAD...) are pressed, not turned, so they are not on Q-Links.
 

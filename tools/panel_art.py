@@ -870,6 +870,19 @@ def bar_looks(src, rects):
     return looks
 
 
+BADGE = 24
+
+
+def badge(n):
+    """a Q-Link number: the display's orange disc, the number dark on it"""
+    big = BADGE * SS
+    im = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([SS, SS, big - SS - 1, big - SS - 1], fill=LIT + (255,), outline=(20, 12, 4, 255), width=SS)
+    d.text((big / 2, big / 2 + SS), str(n), font=label_font(int(15 * SS)), fill=(20, 12, 4, 255), anchor="mm")
+    return im.resize((BADGE, BADGE), Image.LANCZOS)
+
+
 # ------------------------------------------------------------------------------------------------ main
 def main(skin):
     tui_path = os.path.join(skin, "TUI.json")
@@ -886,11 +899,30 @@ def main(skin):
         sk.used.add(bgname)
         pages[name] = [sub("Background", "Image", {"version": 2, "imageType": "Regular", "colour": "0", "image": bgname},
                            bounds_s(0, 0, P.W, P.H))] + kids
+    # each Q-Link page: an orange number on each of its controls = the Force knob (1-8) that turns it now
+    badge_names = [sk.save(badge(n), "bz_qlink_%d.png" % n, rgb=False) for n in range(1, 9)]
+    sub_kids = {}
+    for tab, name in enumerate(P.TABS):
+        for sname, keys in zip(P.qlink_names(tab), P.qlink_pages(tab)):
+            extra = []
+            for n, key in enumerate(keys):
+                idx = "Parameter %d" % sk.index[key]
+                for c in pages[name]:
+                    m = c.get("handle remapping", {}).get("map") or []
+                    if c["componentData"]["type"] != "Image" and m and m[0]["value"] == idx:
+                        x, y, w, h = map(int, c["bounds"]["bounds"].split())
+                        bx, by = max(0, min(P.W - BADGE, x - 6)), max(0, min(P.H - BADGE, y - 6))
+                        extra.append(sub("Q-Link %d" % (n + 1), "Image", {"version": 2, "imageType": "Regular", "colour": "0",
+                                                                          "image": badge_names[n]}, bounds_s(bx, by, BADGE, BADGE)))
+                        break
+                else:
+                    raise SystemExit("panel_art: %s (Q-Link page %s) has no control on the page" % (key, sname))
+            sub_kids["%s|%s" % (name, sname)] = extra
     keep = []
     for e in defs:
         tabname = e["key"].split("|")[0]
         if "|" in e["key"] and tabname in pages:
-            e["value"]["componentsData"] = pages[tabname]
+            e["value"]["componentsData"] = pages[tabname] + sub_kids.get(e["key"], [])
             e["value"]["backgroundData"] = {"version": 1, "focussed": {"version": 1, "colour": "ff0e0e0e", "image": ""},
                                             "unfocussed": {"version": 1, "colour": "ff0e0e0e", "image": ""}}
             keep.append(e)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4
+- Q-Links: 8 per Q-Link page (one Force knob bank, knobs 1-8; no hidden second bank), every parameter in reading
+  order, 13 pages: PANEL 1-3, MODULES 1-4, FX 1-2, PAN, SEND, LEVEL, MASTER. On the screen, each control of the
+  selected Q-Link page shows an orange number: the knob that turns it.
+
 ## 0.2.3
 - PANEL: SELECT/GATE and BACK/NOTE are endless encoders: each knob stays where it was turned and steps from there, so
   walking the steps with SELECT/GATE no longer turns BACK/NOTE to each step's note.

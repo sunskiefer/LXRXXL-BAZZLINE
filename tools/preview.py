@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A picture of a built page with chosen values, as MPC would draw it (offline check, README pictures).
 
-    python3 tools/preview.py <Plugin Skins dir> <out.png> <tab 0|1|2> [key=value ...]
+    python3 tools/preview.py <Plugin Skins dir> <out.png> <tab 0|1|2>[.<Q-Link page 1..>] [key=value ...]
 
 value: a number 0..1, or an option's index; keys not given take params.json's default. A key (button) given as
 1 is drawn lit; disp1..3 take a character ("disp1=1"), dots 0/1."""
@@ -35,12 +35,9 @@ def main(skin, out, tab, sets):
             continue
         vals[i] = (float(v), vals[i][1])
     defs = {d["key"]: d["value"] for d in tui["componentDefinitions"]["localComponentDefinitions"]}
-    names, seen = [], set()
-    for t in tui["tabs"]:   # a tab's Q-Link sub-pages share its page
-        if t["fnKeyIndex"] not in seen:
-            seen.add(t["fnKeyIndex"])
-            names.append(t["componentName"])
-    page = defs[names[tab]]
+    tab, _, subp = str(tab).partition(".")   # "1" or "1.3": tab 1's third Q-Link page (its Q-Link numbers)
+    page = next(defs[t["componentName"]] for t in tui["tabs"]
+                if t["fnKeyIndex"] == int(tab) and t["fnKeySubIndex"] == (int(subp) - 1 if subp else 0))
     img = Image.new("RGBA", (1280, 628), (0, 0, 0, 255))
 
     def opt(i):
@@ -89,4 +86,4 @@ def main(skin, out, tab, sets):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4:])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:])

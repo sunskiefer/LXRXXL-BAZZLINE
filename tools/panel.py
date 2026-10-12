@@ -237,16 +237,29 @@ def pack(rows, n=16):
     return [p for p in pages if p]
 
 
+def chunks(keys, n=8):
+    return [keys[i:i + n] for i in range(0, len(keys), n)]
+
+
 def qlink_pages(tab):
-    """the Q-Link sub-pages of a tab: lists of up to 16 keys (two banks of 8 on a Force), top-left first"""
+    """the Q-Link pages of a tab: 8 keys each, one Force knob bank (no hidden second bank), every parameter of the tab
+    in reading order (top left first); MPC's page strip under the plugin steps through them"""
     rows = {1: MODULES_ROWS, 2: FX_ROWS}.get(tab) or rows_of(controls(tab), ROW_GAP[tab])
-    if tab == 2:   # the mixer, row by row: PAN 1-8 + DLY SEND 1-8, then LEVEL 1-8 + MASTER
-        rows = rows + [["mix_pan%d" % i for i in range(1, 9)] + ["mix_snd%d" % i for i in range(1, 9)],
-                 ["mix_lvl%d" % i for i in range(1, 9)] + ["mix_master"]]
-    return pack(rows)
+    keys = [k for r in rows for k in r]
+    pages = chunks(keys, 8)
+    if tab == 2:   # the mixer, a row each: PAN 1-8, DLY SEND 1-8, LEVEL 1-8, then MASTER
+        pages += [["mix_pan%d" % i for i in range(1, 9)], ["mix_snd%d" % i for i in range(1, 9)],
+                  ["mix_lvl%d" % i for i in range(1, 9)], ["mix_master"]]
+    return pages
 
 
-QLINK_NAMES = [["PANEL 1", "PANEL 2"], ["MODULES 1", "MODULES 2"], ["FX", "PAN SEND", "LEVELS"]]
+def qlink_names(tab):
+    """each Q-Link page's short name in MPC's page strip"""
+    n = len(qlink_pages(tab))
+    if tab == 2:
+        fx = n - 4
+        return ["FX %d" % (i + 1) for i in range(fx)] + ["PAN", "SEND", "LEVEL", "MASTER"]
+    return ["%s %d" % (TABS[tab], i + 1) for i in range(n)]
 
 
 def layout_lines():
@@ -262,7 +275,7 @@ def layout_lines():
         for i, key in enumerate(k for p in qp for k in p):   # placeholders: a small grid (panel_art.py replaces them)
             L.append('knob cx=%d cy=%d r=12 label="" key=%s ns=0 bw=30' % (24 + 34 * (i % 36), Y0 + 24 + 40 * (i // 36), key))
         for i, p in enumerate(qp):   # each Q-Link page its own short name (MPC's page strip shows them)
-            L.append('qlinks "%s" = %s' % (QLINK_NAMES[t][i], ",".join(p)))
+            L.append('qlinks "%s" = %s' % (qlink_names(t)[i], ",".join(p)))
         L.append("")
     return L
 
