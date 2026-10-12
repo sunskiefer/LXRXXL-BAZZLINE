@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.8
+- PANEL: the VOICE RESET button sits on its bezel exactly as in Suns Kiefer's artwork (it was 4 px off).
+
 ## 0.2.7
 - PANEL: VOICE RESET, Suns Kiefer's orange button on its bezel under the TRACK keys: the selected track's sound back
   to the default sound. SHIFT + VOICE RESET: MUTE ALL (every track muted and silenced; again: all back).
