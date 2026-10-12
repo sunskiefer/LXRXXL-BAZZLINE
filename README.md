@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.0
+# LXRXXL BAZZLINE v0.2.1
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
