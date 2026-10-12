@@ -79,3 +79,15 @@ jobs:
           files: dist/*.zip
           body_path: .github/RELEASE_NOTES.md
           prerelease: false
+
+      # A version listed in tested.json (tested on a device) is a full release, not a pre-release.
+      - name: Promote tested releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for v in $(python3 -c "import json; print(' '.join(sorted({e['version'] for e in json.load(open('tested.json'))})))"); do
+            if [ "$(gh release view "v$v" --json isPrerelease -q .isPrerelease 2>/dev/null)" = "true" ]; then
+              gh release edit "v$v" --prerelease=false --notes-file .github/RELEASE_NOTES.md && echo "v$v: now a full release"
+            fi
+          done
