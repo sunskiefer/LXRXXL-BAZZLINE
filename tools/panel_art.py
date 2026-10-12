@@ -188,11 +188,9 @@ def relabel(img):
 
 def reset_key_art(img, lit):
     """the VOICE RESET button (btn_reset*.png) on its bezel (btn_reset_bezel.png), centred at P.RESET_KEY, artwork scale"""
-    _, cx, cy = P.RESET_KEY
     img = img.copy()
     for name in ("btn_reset_bezel.png", "btn_reset_on.png" if lit else "btn_reset.png"):
-        pic = art(name)
-        img.alpha_composite(pic, (R(cx - pic.size[0] / 2), R(cy - pic.size[1] / 2)))
+        img.alpha_composite(art(name), P.RESET_ART[name])
     return img
 
 
