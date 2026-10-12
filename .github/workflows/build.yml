@@ -78,4 +78,4 @@ jobs:
           make_latest: true
           files: dist/*.zip
           body_path: .github/RELEASE_NOTES.md
-          prerelease: true
+          prerelease: false

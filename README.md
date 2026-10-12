@@ -21,12 +21,8 @@ has a delay and a gate/duck triggered by MIDI.
 > those circuits behave, from the public manuals. LXRXXL BAZZLINE is not affiliated with or endorsed by Erica Synths,
 > Sonic Potions or Akai Professional. DB-01, Bassline and LXR-02 are their makers' names.
 
-> [!NOTE]
-> **Status: 0.2.0, not yet tested on a device.** It is built and tested offline only:
-> - x86 under valgrind;
-> - the MPC simulation through the VST2 wrapper, on x86 and on ARM under qemu.
->
-> See [Testing](#testing). Report anything odd under Issues.
+**Tested on an Akai Force** (see `tested.json`). Downloads: [Releases](https://github.com/sunskiefer/LXRXXL-BAZZLINE/releases).
+Every build is also tested offline (see [Testing](#testing)). Report anything odd under Issues.
 
 ## The three pages
 
@@ -296,6 +292,8 @@ The tools:
 - `tools/preview.py`: draws a page with chosen values.
 
 ## Testing
+
+On a device: 0.2.0 on an Akai Force, MPC OS 3.9.1 (`tested.json`).
 
 Offline, every build (`test/run_tests.sh`, and in CI):
 - **The framework's host test:** two instances, names, set/get, option stepping, notes into audio, the chunk.

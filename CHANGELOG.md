@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.2.0
+- Tested on an Akai Force (MPC OS 3.9.1).
 - Three pages, each filling the whole screen: PANEL (the front, stretched to MPC's full width), MODULES (bigger, with a
   readout) and FX MIXER (the delay and the gate/duck, bigger, with a readout and the mixer).
 - Knobs turn in place: their filmstrips follow the framework's rule for MPC (128 frames, at most 126 px). In 0.1.0 some
