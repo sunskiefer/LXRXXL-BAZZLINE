@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.4
+# LXRXXL BAZZLINE v0.2.5
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
@@ -134,27 +134,30 @@ There is no threshold: a MIDI trigger is always on.
 
 ### Q-Links
 
-Every parameter of every page is on the Q-Links, in reading order (from the top left, row by row, left to right),
-**8 per Q-Link page: one Force knob bank, knobs 1-8**, so there is no hidden second bank. Pick a Q-Link page in
-MPC's page strip under the plugin (PANEL 1, PANEL 2... the dots); the knobs then turn the controls of that page, and
-**each of them shows an orange number on the screen: the knob (1-8) that turns it**. A control without a number is
-on another Q-Link page of the same screen.
+The order of the knobs is Suns Kiefer's own map, kept in **`qlinks.json`** (made with the BAZZLINE Q-Link Map
+page). Each Q-Link page is 8 knobs, one Force knob bank, so there is no hidden second bank; some knobs are left empty
+on purpose. Pick a Q-Link page in MPC's page strip under the plugin (PANEL 1, PANEL 2... the dots): the knobs then turn
+that page's controls, and **each of them shows an orange number on the screen: the knob (1-8) that turns it**. A
+control without a number is on another Q-Link page. PRESET SLOT and DUCK MIDI CH are on no knob (touch, drag or
+the data wheel).
+
+To change the order: number the controls in the Q-Link Map, save its file (`bazzline-qlinks.json`), copy it over
+`qlinks.json` and build (`./build.sh`).
 
 | Page | Q-Link page | Knobs 1-8 |
 |---|---|---|
-| PANEL | **PANEL 1** | DRY/WET, DELAY TIME, RELEASE, GATE/DUCK, DRIVE, DETUNE, VCA ENV, WAVE |
-| PANEL | **PANEL 2** | FILTER, VCF ENV, RESONANCE, CUTOFF, FM LVL, SUB LVL, NOISE LVL, SELECT/GATE |
-| PANEL | **PANEL 3** | BACK/NOTE, LFO RATE, LFO LVL, ENV/CV LVL |
-| MODULES | **MODULES 1** | TRACK, OSC MODE, FM RATIO, WAVE POS, DRIVE, SUB LVL, TONE, ACCENT |
-| MODULES | **MODULES 2** | SWEEP, SLIDE TIME, VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC |
-| MODULES | **MODULES 3** | LEVEL, PAN, DRIVE POS, CURVE, FILTER MODEL, KEY TRACK, SWARM RATE, SWARM MODE |
-| MODULES | **MODULES 4** | DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
-| FX MIXER | **FX 1** | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, PRESET SLOT, GATE/DUCK, DEPTH, HOLD |
-| FX MIXER | **FX 2** | ATTACK, RELEASE, DELAY MODE, DUCK MIDI CH |
-| FX MIXER | **PAN** | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8 |
-| FX MIXER | **SEND** | DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
-| FX MIXER | **LEVEL** | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8 |
-| FX MIXER | **MASTER** | MASTER |
+| PANEL | **PANEL 1** | (empty), DRY/WET, DELAY TIME, SELECT/GATE, BACK/NOTE, RELEASE, GATE/DUCK, (empty) |
+| PANEL | **PANEL 2** | DRIVE, (empty), DETUNE, VCA ENV, FM LVL, SUB LVL, NOISE LVL, WAVE |
+| PANEL | **PANEL 3** | VCF ENV, RESONANCE, CUTOFF, LFO RATE, LFO LVL, ENV/CV LVL, FILTER |
+| MODULES | **MODULES 1** | OSC MODE, FM RATIO, WAVE POS, DRIVE, SUB LVL, TONE, DRIVE POS, CURVE |
+| MODULES | **MODULES 2** | VCF ATK, VCF DEC, VCA ATK, VCA ENV, ENV/CV LVL, PITCH DEC, LEVEL, PAN |
+| MODULES | **MODULES 3** | FILTER MODEL, KEY TRACK, ACCENT, SLIDE TIME, SWEEP, (empty), TRACK, (empty) |
+| MODULES | **MODULES 4** | SWARM MODE, SWARM RATE, DETUNE, SWARM MIX, MOD WAVE, MOD DEST, MOD SYNC |
+| FX MIXER | **FX 1** | DELAY TIME, DELAY IN LVL, FEEDBACK, DRY/WET, DELAY MODE, (empty), (empty), (empty) |
+| FX MIXER | **FX 2** | DEPTH, HOLD, ATTACK, RELEASE, GATE/DUCK, (empty), MASTER, (empty) |
+| FX MIXER | **FX 3** | LEVEL 1, LEVEL 2, LEVEL 3, LEVEL 4, LEVEL 5, LEVEL 6, LEVEL 7, LEVEL 8 |
+| FX MIXER | **FX 4** | PAN 1, PAN 2, PAN 3, PAN 4, PAN 5, PAN 6, PAN 7, PAN 8 |
+| FX MIXER | **FX 5** | DLY SEND 1, DLY SEND 2, DLY SEND 3, DLY SEND 4, DLY SEND 5, DLY SEND 6, DLY SEND 7, DLY SEND 8 |
 
 The keys (step keys, TRACK 1-8, MUTE/SOLO, SAVE/LOAD...) are pressed, not turned, so they are not on Q-Links.
 
@@ -293,7 +296,7 @@ test/arm_sim.sh        # the MPC simulation built for ARM, run under qemu-arm
 
 The tools:
 - `tools/gen_params.py`: the parameter list. Parameters are only ever appended, because MPC stores automation by index.
-- `tools/panel.py`: where every control of the artwork sits. It writes `layout.conf`.
+- `tools/panel.py`: where every control of the artwork sits, and the Q-Link pages from `qlinks.json`. It writes `layout.conf`.
 - `tools/panel_art.py`: builds the three pages from the artwork (`art/panel/`).
 - `tools/preview.py`: draws a page with chosen values.
 

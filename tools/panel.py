@@ -17,6 +17,7 @@ Other pictures used: knob_big.png / knob_encoder.png (the knobs), btn_lit_*.png 
 layout.conf only carries the three tabs and their Q-Links for mpc-vst-plugins; tools/panel_art.py then builds every
 control from the artwork. Q-Links: every parameter of a page, in reading order (top-left first, row by row), 16 per
 Q-Link sub-page. Coordinates in layout.conf are Force Shadow pixels (y 86..714)."""
+import json
 import os
 import sys
 
@@ -241,25 +242,43 @@ def chunks(keys, n=8):
     return [keys[i:i + n] for i in range(0, len(keys), n)]
 
 
+QLINK_FILE = os.path.join(ROOT, "qlinks.json")   # the Q-Link order, made with the Q-Link Map (bazzline-qlinks.json)
+PAGE_IDS = ["panel", "modules", "fx"]
+
+
+def mapped_keys(tab):
+    """the controls a tab can put on a knob"""
+    keys = [c[0] for c in controls(tab)]
+    if tab == 2:
+        keys += ["mix_%s%d" % (w, i) for w in ("lvl", "pan", "snd") for i in range(1, 9)] + ["mix_master"]
+    return keys
+
+
 def qlink_pages(tab):
-    """the Q-Link pages of a tab: 8 keys each, one Force knob bank (no hidden second bank), every parameter of the tab
-    in reading order (top left first); MPC's page strip under the plugin steps through them"""
-    rows = {1: MODULES_ROWS, 2: FX_ROWS}.get(tab) or rows_of(controls(tab), ROW_GAP[tab])
-    keys = [k for r in rows for k in r]
-    pages = chunks(keys, 8)
-    if tab == 2:   # the mixer, a row each: PAN 1-8, DLY SEND 1-8, LEVEL 1-8, then MASTER
-        pages += [["mix_pan%d" % i for i in range(1, 9)], ["mix_snd%d" % i for i in range(1, 9)],
-                  ["mix_lvl%d" % i for i in range(1, 9)], ["mix_master"]]
-    return pages
+    """the Q-Link pages of a tab: 8 slots each (one Force knob bank), from qlinks.json; "-" is an empty knob"""
+    data = json.load(open(QLINK_FILE))
+    knobs = data["pages"][PAGE_IDS[tab]]["knobs"]
+    allowed = set(mapped_keys(tab))
+    slots = []
+    for k in sorted(knobs, key=lambda k: k["n"]):
+        while len(slots) < k["n"] - 1:
+            slots.append("-")
+        key = k.get("key") or "-"
+        if key != "-" and key not in allowed:
+            raise SystemExit("qlinks.json: %s is not a control of %s" % (key, TABS[tab]))
+        if key != "-" and key in slots:
+            raise SystemExit("qlinks.json: %s is on two knobs of %s" % (key, TABS[tab]))
+        slots.append(key)
+    while slots and slots[-1] == "-":
+        slots.pop()
+    pages = [slots[i:i + 8] for i in range(0, len(slots), 8)]
+    return [p for p in pages if any(k != "-" for k in p)]
 
 
 def qlink_names(tab):
     """each Q-Link page's short name in MPC's page strip"""
-    n = len(qlink_pages(tab))
-    if tab == 2:
-        fx = n - 4
-        return ["FX %d" % (i + 1) for i in range(fx)] + ["PAN", "SEND", "LEVEL", "MASTER"]
-    return ["%s %d" % (TABS[tab], i + 1) for i in range(n)]
+    base = ["PANEL", "MODULES", "FX"][tab]
+    return ["%s %d" % (base, i + 1) for i in range(len(qlink_pages(tab)))]
 
 
 def layout_lines():
@@ -272,7 +291,7 @@ def layout_lines():
     for t, name in enumerate(TABS):
         L.append("[tab %s]" % name)
         qp = qlink_pages(t)
-        for i, key in enumerate(k for p in qp for k in p):   # placeholders: a small grid (panel_art.py replaces them)
+        for i, key in enumerate(k for p in qp for k in p if k != "-"):   # placeholders: a small grid (panel_art.py replaces them)
             L.append('knob cx=%d cy=%d r=12 label="" key=%s ns=0 bw=30' % (24 + 34 * (i % 36), Y0 + 24 + 40 * (i // 36), key))
         for i, p in enumerate(qp):   # each Q-Link page its own short name (MPC's page strip shows them)
             L.append('qlinks "%s" = %s' % (qlink_names(t)[i], ",".join(p)))

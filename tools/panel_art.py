@@ -906,6 +906,8 @@ def main(skin):
         for sname, keys in zip(P.qlink_names(tab), P.qlink_pages(tab)):
             extra = []
             for n, key in enumerate(keys):
+                if key == "-":   # an empty knob
+                    continue
                 idx = "Parameter %d" % sk.index[key]
                 for c in pages[name]:
                     m = c.get("handle remapping", {}).get("map") or []
