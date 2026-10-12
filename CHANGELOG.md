@@ -1,9 +1,12 @@
 # Changelog
 
+## 0.2.6
+- No Q-Link numbers on the screen: the pages are the artwork only (the order is in the README's Q-Link table).
+
 ## 0.2.5
 - Q-Links: Suns Kiefer's own knob order from the Q-Link Map (`qlinks.json`), with empty knobs where he left them:
   PANEL 1-3, MODULES 1-4, FX 1-5 (delay, gate/duck + MASTER, LEVEL 1-8, PAN 1-8, DLY SEND 1-8). The build reads
-  `qlinks.json`; the on-screen knob numbers follow it.
+  `qlinks.json`.
 
 ## 0.2.4
 - Q-Links: 8 per Q-Link page (one Force knob bank, knobs 1-8; no hidden second bank), every parameter in reading

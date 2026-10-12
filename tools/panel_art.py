@@ -900,7 +900,7 @@ def main(skin):
         pages[name] = [sub("Background", "Image", {"version": 2, "imageType": "Regular", "colour": "0", "image": bgname},
                            bounds_s(0, 0, P.W, P.H))] + kids
     # each Q-Link page: an orange number on each of its controls = the Force knob (1-8) that turns it now
-    badge_names = [sk.save(badge(n), "bz_qlink_%d.png" % n, rgb=False) for n in range(1, 9)]
+    badge_names = ["" for n in range(1, 9)]   # the pages stay clean: the numbers only check that every key has a control
     sub_kids = {}
     for tab, name in enumerate(P.TABS):
         for sname, keys in zip(P.qlink_names(tab), P.qlink_pages(tab)):
@@ -924,7 +924,7 @@ def main(skin):
     for e in defs:
         tabname = e["key"].split("|")[0]
         if "|" in e["key"] and tabname in pages:
-            e["value"]["componentsData"] = pages[tabname] + sub_kids.get(e["key"], [])
+            e["value"]["componentsData"] = pages[tabname]   # no knob numbers on the screen (Suns Kiefer's choice)
             e["value"]["backgroundData"] = {"version": 1, "focussed": {"version": 1, "colour": "ff0e0e0e", "image": ""},
                                             "unfocussed": {"version": 1, "colour": "ff0e0e0e", "image": ""}}
             keep.append(e)

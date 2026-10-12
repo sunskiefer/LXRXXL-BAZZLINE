@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.5
+# LXRXXL BAZZLINE v0.2.6
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
@@ -137,8 +137,7 @@ There is no threshold: a MIDI trigger is always on.
 The order of the knobs is Suns Kiefer's own map, kept in **`qlinks.json`** (made with the BAZZLINE Q-Link Map
 page). Each Q-Link page is 8 knobs, one Force knob bank, so there is no hidden second bank; some knobs are left empty
 on purpose. Pick a Q-Link page in MPC's page strip under the plugin (PANEL 1, PANEL 2... the dots): the knobs then turn
-that page's controls, and **each of them shows an orange number on the screen: the knob (1-8) that turns it**. A
-control without a number is on another Q-Link page. PRESET SLOT and DUCK MIDI CH are on no knob (touch, drag or
+that page's controls (the table below). PRESET SLOT and DUCK MIDI CH are on no knob (touch, drag or
 the data wheel).
 
 To change the order: number the controls in the Q-Link Map, save its file (`bazzline-qlinks.json`), copy it over
