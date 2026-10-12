@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+- PANEL: SELECT/GATE and BACK/NOTE are endless encoders: each knob stays where it was turned and steps from there, so
+  walking the steps with SELECT/GATE no longer turns BACK/NOTE to each step's note.
+- Releases are pre-releases until their version is in tested.json (tested on a device); then the build promotes them.
+
 ## 0.2.2
 - PANEL artwork: the small "LXR-02" text (bottom left) is off the panel.
 - README, catalog and source wording: LXRXXL is a port of the open-source Sonic Potions LXR engine inspired by the

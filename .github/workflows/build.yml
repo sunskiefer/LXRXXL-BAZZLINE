@@ -78,7 +78,7 @@ jobs:
           make_latest: true
           files: dist/*.zip
           body_path: .github/RELEASE_NOTES.md
-          prerelease: false
+          prerelease: true
 
       # A version listed in tested.json (tested on a device) is a full release, not a pre-release.
       - name: Promote tested releases

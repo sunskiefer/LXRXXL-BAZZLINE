@@ -26,6 +26,7 @@ void ui_init(Bl *x)
 {
     memset(&x->ui, 0, sizeof x->ui);
     x->ui.mode = MD_NORMAL;
+    x->ui.encPos[0] = x->ui.encPos[1] = -1.f;
     x->displayRev++;
 }
 
@@ -548,21 +549,27 @@ int ui_led(Bl *x, int b)
 }
 
 /* ---------------------------------------------------------------- the encoders */
-/* an encoder's new position as an index of n: MPC moves a knob by a small step from the value it read back (a wheel
- * click 1/100, a Q-Link tick 1/128), often less than half an index, which rounding would undo (the knob then only went
- * one way). A move that rounds back to the current index steps one index in its direction; a bigger move (a drag)
- * lands where it points. */
+/* The data knobs are endless encoders: each stands where it was last turned, and only its own moves count. A move
+ * steps the value by the knob's travel (the whole range per full turn); MPC moves a knob by a small step from where it
+ * reads it (a wheel click 1/100, a Q-Link tick 1/128), and any move steps at least one value in its direction. So
+ * turning SELECT/GATE to another step leaves BACK/NOTE where it stands (it used to jump to that step's note). At an
+ * end of its travel MPC can only send the end again: that is a move further that way. */
+static float *enc_pos;   /* the knob being moved (ui_knob sets it; one engine call at a time) */
 static int enc_index(float norm, int cur, int n)
 {
-    int t;
+    float pos;
+    int t, steps;
     if (n < 2) return 0;
-    t = (int)lroundf(norm * (n - 1));
-    if (t == cur) {
-        const float at = cur / (float)(n - 1);
-        if (norm > at + 1e-4f && cur < n - 1) t = cur + 1;
-        else if (norm < at - 1e-4f && cur > 0) t = cur - 1;
+    pos = *enc_pos >= 0.f ? *enc_pos : cur / (float)(n - 1);
+    steps = (int)lroundf((norm - pos) * (n - 1));
+    if (!steps) {
+        if (norm > pos + 1e-4f || (norm >= 0.9999f && pos >= 0.9999f)) steps = 1;
+        else if (norm < pos - 1e-4f || (norm <= 1e-4f && pos <= 1e-4f)) steps = -1;
     }
-    return t < 0 ? 0 : t > n - 1 ? n - 1 : t;
+    t = cur + steps;
+    t = t < 0 ? 0 : t > n - 1 ? n - 1 : t;
+    *enc_pos = t / (float)(n - 1);   /* the knob stands at the new value */
+    return t;
 }
 
 void ui_knob(Bl *x, int which, float norm)
@@ -571,6 +578,8 @@ void ui_knob(Bl *x, int which, float norm)
     Sound *s = &x->p.snd[x->ui.track];
     char b[16];
     norm = clampf(norm, 0, 1);
+    if (x->ui.encMode[which] != x->ui.mode) { x->ui.encPos[which] = -1.f; x->ui.encMode[which] = x->ui.mode; }
+    enc_pos = &x->ui.encPos[which];
     /* in a function, BACK/NOTE sets its value; SELECT/GATE stays the step knob (in LFO it picks the wave) */
     switch (which == 1 || x->ui.mode == MD_LFO ? x->ui.mode : MD_NORMAL) {
     case MD_PLAYMODE: tp->playMode = (uint8_t)enc_index(norm, tp->playMode, PM_COUNT); mode_text(x, b); ui_message(x, b, 0, 1200); break;
@@ -612,6 +621,7 @@ void ui_knob(Bl *x, int which, float norm)
 
 float ui_knobGet(Bl *x, int which)
 {
+    if (x->ui.encMode[which] == x->ui.mode && x->ui.encPos[which] >= 0.f) return x->ui.encPos[which];   /* where it stands */
     const TrackPat *tp = bl_edit(x);
     const Sound *s = &x->p.snd[x->ui.track];
     switch (which == 1 || x->ui.mode == MD_LFO ? x->ui.mode : MD_NORMAL) {

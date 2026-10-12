@@ -197,6 +197,19 @@ int main(void)
         CHECK(!strcmp(d, "FWD"), "a Q-Link backwards: '%s'", d);
         CHECK(fabsf(a->getP(a, P_SEL) - sel0) < 1e-4f, "SELECT/GATE did not move (%.3f -> %.3f)", sel0, a->getP(a, P_SEL));
         tap(a, P_SHIFT);
+        /* the data knobs are endless encoders: turning SELECT/GATE to another step leaves BACK/NOTE where it stands */
+        {
+            int k2;
+            float n0;
+            a->setP(a, P_NOTE, a->getP(a, P_NOTE) + 0.01f); run(a, 0.05);
+            n0 = a->getP(a, P_NOTE);
+            for (k2 = 0; k2 < 6; k2++) { a->setP(a, P_SEL, a->getP(a, P_SEL) + 0.01f); run(a, 0.05); }
+            CHECK(fabsf(a->getP(a, P_NOTE) - n0) < 1e-5f, "SELECT/GATE leaves BACK/NOTE where it stands (%.4f -> %.4f)", n0, a->getP(a, P_NOTE));
+            a->setP(a, P_NOTE, 1.f); run(a, 0.05);
+            n0 = a->getP(a, P_NOTE);
+            a->setP(a, P_NOTE, 1.f); run(a, 0.05);   /* at the end of its travel: MPC sends the end again */
+            CHECK(a->getP(a, P_NOTE) >= n0, "BACK/NOTE still turns at the end of its travel");
+        }
         /* outside a function: SELECT/GATE walks the steps one by one, both ways */
         {
             char d0[8];

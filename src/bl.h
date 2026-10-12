@@ -172,6 +172,8 @@ typedef struct Bl {
         uint32_t pressFlip[NUM_BUTTONS];
         uint8_t held[NUM_TRACKS];    /* MIDI: keys held per track (a key over a held one slides) */
         uint8_t lastNote[NUM_TRACKS];
+        float encPos[2];             /* SELECT/GATE, BACK/NOTE: where each knob stands (< 0: at its value) */
+        uint8_t encMode[2];          /* the mode it stood in */
         double lastTap;              /* the TAP key */
         int taps;
     } ui;

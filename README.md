@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.2
+# LXRXXL BAZZLINE v0.2.3
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
@@ -46,7 +46,7 @@ track and its value (`T3   CUTOFF   75`, `DELAY TIME   400 ms`, `T5   PAN   L 20
 | FM LVL / SUB LVL / NOISE LVL | FM depth (the modulator's ratio: MODULES), the sub oscillator (-1 octave square), white noise |
 | LFO RATE / LFO LVL | the modulator's rate and depth (wave, destination and sync: MODULES) |
 | ENV/CV LVL | the pitch envelope's amount (up to +4 octaves at the top: kick-basses, 808s) |
-| SELECT/GATE | walks the steps of the selected track (the display shows `S 1`..`S64`) |
+| SELECT/GATE | walks the steps of the selected track (the display shows `S 1`..`S64`). SELECT/GATE and BACK/NOTE are endless encoders: each stays where you turned it, so walking the steps doesn't move BACK/NOTE |
 | BACK/NOTE | the selected step's note, C0..C6 (it turns the step on); in a function, that function's value (SELECT/GATE stays the step knob, except in LFO, where it picks the wave) |
 | DELAY: DRY/WET, TIME | the delay's mix and time (the same as on FX MIXER) |
 | RELEASE, GATE / DUCK | the gate/duck's release and mode (the same as on FX MIXER) |
