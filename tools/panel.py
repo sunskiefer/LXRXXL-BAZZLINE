@@ -131,6 +131,9 @@ for k, x, y in [("d_add", 270.5, 539.5), ("d_hold", 336.5, 540), ("d_rev", 410.5
                 ("gd_on", 886.5, 600.5)]:
     KEYS[k] = (2, x, y, 36)   # the coloured keys of the delay and the duck: printed lit, unlit made from them
 
+# VOICE RESET (SHIFT: MUTE ALL): Suns Kiefer's button on its bezel, PANEL, artwork pixels (centre)
+RESET_KEY = ("v_reset", 506.5, 174.5)
+
 # ---------------------------------------------------------------- displays
 DISPLAY_CELLS = [(427, 297), (480, 297), (533, 297)]   # PANEL: the three characters' top-left (40 x 54, dot included)
 CELL_W, CELL_H = 40, 54

@@ -156,6 +156,7 @@ static const ParamMap PARAM_MAP[P_COUNT] UNUSED = {
     {PK_BUTTON, B_PR_PERF, 0},   /* pr_perf */
     {PK_BUTTON, B_PR_SAVE, 0},   /* pr_save */
     {PK_BUTTON, B_PR_LOAD, 0},   /* pr_load */
+    {PK_BUTTON, B_V_RESET, 0},   /* v_reset */
 };
 
 typedef struct { const char *key, *name; float def; uint8_t nopts; const char *const *opts; } SoundDef;

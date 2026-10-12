@@ -186,6 +186,16 @@ def relabel(img):
     return img
 
 
+def reset_key_art(img, lit):
+    """the VOICE RESET button (btn_reset*.png) on its bezel (btn_reset_bezel.png), centred at P.RESET_KEY, artwork scale"""
+    _, cx, cy = P.RESET_KEY
+    img = img.copy()
+    for name in ("btn_reset_bezel.png", "btn_reset_on.png" if lit else "btn_reset.png"):
+        pic = art(name)
+        img.alpha_composite(pic, (R(cx - pic.size[0] / 2), R(cy - pic.size[1] / 2)))
+    return img
+
+
 def make_background(tab):
     pic, (cx0, cy0, cx1, cy1), sx, sy = P.PAGES[tab]
     bg_art = art(pic)
@@ -194,6 +204,7 @@ def make_background(tab):
     if tab == 1:
         bg_art = relabel(bg_art)
     if tab == 0:
+        bg_art = reset_key_art(bg_art, False)   # the VOICE RESET button on its bezel, unlit
         # the display window: cleared (the live characters are pictures over it)
         x, y, w, h = P.DISPLAY_BOX
         a = np.asarray(bg_art).copy()
@@ -712,6 +723,18 @@ def build_page(sk, tab):
         dkey = "bzKey_%s" % key
         sk.defs.append(definition(dkey, KEY_ACTIONS, [focus(rect[2], rect[3]), button(on_n, off_n, 1, 1, rect[2], rect[3])]))
         place(dkey, key, key, rect)
+
+    # ---- VOICE RESET (PANEL): the unlit button is in the background; the lit one is the same spot of the artwork with it
+    if tab == 0:
+        key, cx, cy = P.RESET_KEY
+        rect = prect(tab, cx - 54, cy - 54, 108, 108)
+        off = bg.crop((rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3])).convert("RGBA")
+        lit_art = reset_key_art(art("front_bg.png"), True).crop((R(cx - 54), R(cy - 54), R(cx + 54), R(cy + 54)))
+        on = lit_art.resize((rect[2], rect[3]), Image.LANCZOS)
+        on_n = sk.save(on, "bz_f_key_v_reset_on.png")
+        off_n = sk.save(off, "bz_f_key_v_reset_off.png")
+        sk.defs.append(definition("bzKey_v_reset", KEY_ACTIONS, [focus(rect[2], rect[3]), button(on_n, off_n, 1, 1, rect[2], rect[3])]))
+        place("bzKey_v_reset", key, key, rect)
 
     # ---- the selectors in the display's font: TRACK (MODULES), the duck's MIDI CH (FX MIXER)
     def selector(key, sel, texts, prefix_w=0):

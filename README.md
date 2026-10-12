@@ -1,4 +1,4 @@
-# LXRXXL BAZZLINE v0.2.6
+# LXRXXL BAZZLINE v0.2.7
 
 ![LXRXXL BAZZLINE, the front panel](docs/img/panel.png)
 ![LXRXXL BAZZLINE, the MODULES page](docs/img/modules.png)
@@ -54,6 +54,7 @@ track and its value (`T3   CUTOFF   75`, `DELAY TIME   400 ms`, `T5   PAN   L 20
 | TRACK 1-8 | select a track (a playing track's key glows) |
 | LINK | this track plays the steps of the track before it (stack two voices on one line) |
 | MUTE | mutes the selected track. **SHIFT + MUTE = RESET**: back to the factory project |
+| VOICE RESET (the orange button under the TRACK keys) | the selected track's sound back to the default sound (every knob, slider and selector at its default: an audible saw bass at a sensible level); its steps stay. **SHIFT + VOICE RESET = MUTE ALL**: every track muted and silenced at once (the button stays lit); SHIFT + it again unmutes them all |
 | SHIFT, ▷, □, ○ | SHIFT (tap, then a step key: its function), PLAY, STOP, REC |
 | ◄ BAR ► | the bar the step keys show (a track is up to 64 steps, 4 bars) |
 | -1 OCT / +1 OCT | the selected step's note an octave down / up |

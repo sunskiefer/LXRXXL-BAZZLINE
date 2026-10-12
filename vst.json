@@ -2,7 +2,7 @@
   "name": "LXRXXL BAZZLINE",
   "vendor": "ANDREALPHEUS",
   "uid": "AnBz",
-  "version": 2060,
+  "version": 2070,
   "so": "lxrxxl_bazzline.so",
   "params": "params.json",
   "layout": "layout.conf",

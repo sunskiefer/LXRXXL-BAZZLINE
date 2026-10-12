@@ -97,7 +97,8 @@ def glyph_names():
 
 
 # appended after the mixer (MPC keeps automation by index): the preset keys
-BUTTONS2 = [("pr_sound", "SOUND"), ("pr_perf", "PERF"), ("pr_save", "SAVE"), ("pr_load", "LOAD")]
+BUTTONS2 = [("pr_sound", "SOUND"), ("pr_perf", "PERF"), ("pr_save", "SAVE"), ("pr_load", "LOAD"),
+            ("v_reset", "VOICE RESET")]   # 0.2.7: the selected voice back to the default sound; SHIFT: mute all
 NUM_SLOTS = 64
 
 

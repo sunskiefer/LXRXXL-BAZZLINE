@@ -16,7 +16,7 @@ const TrackPat *bl_trackPat(Bl *x, int t)
     return &bl_pat(x)->t[t];
 }
 
-static void init_sound(Sound *s)
+void init_sound(Sound *s)
 {
     int i;
     for (i = 0; i < SP_COUNT; i++) s->v[i] = SOUND_DEFS[i].def;

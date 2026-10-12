@@ -117,7 +117,8 @@ enum {
     B_PR_PERF = 59,
     B_PR_SAVE = 60,
     B_PR_LOAD = 61,
-    NUM_BUTTONS = 62
+    B_V_RESET = 62,
+    NUM_BUTTONS = 63
 };
 #define NUM_SLOTS 64
 #define GLYPHS " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-+/"

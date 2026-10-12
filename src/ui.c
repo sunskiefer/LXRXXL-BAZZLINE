@@ -473,6 +473,25 @@ void ui_press(Bl *x, int b)
         break;
     case B_TRK_NEXT: ui_press(x, B_TRK1 + (x->ui.track + 1) % NUM_TRACKS); flash(x, B_TRK_NEXT); break;
     case B_PR_SOUND: case B_PR_PERF: case B_PR_SAVE: case B_PR_LOAD: preset_press(x, b); break;
+    case B_V_RESET:
+        if (x->ui.shift) {   /* MUTE ALL (a panic): every track muted and silenced; again: every track back */
+            int t;
+            if (x->p.mutes == 0xff) x->p.mutes = 0;
+            else {
+                x->p.mutes = 0xff;
+                for (t = 0; t < NUM_TRACKS; t++) { voice_noteOff(&x->v[t]); voice_kill(&x->v[t]); x->ui.held[t] = 0; }
+            }
+            x->ui.shift = 0;
+            ui_message(x, x->p.mutes ? "ALL" : "ON", 0, 1000);
+            snprintf(x->pr.msg, sizeof x->pr.msg, x->p.mutes ? "MUTE ALL" : "ALL TRACKS ON");
+        } else {             /* VOICE RESET: the selected track's sound back to the default */
+            init_sound(&x->p.snd[x->ui.track]);
+            ui_message(x, "INI", 0, 1000);
+            snprintf(x->pr.msg, sizeof x->pr.msg, "T%d   VOICE RESET", x->ui.track + 1);
+        }
+        x->touched = TOUCH_PRESET;   /* the readout shows what happened */
+        flash(x, B_V_RESET);
+        break;
     case B_CH_NEXT:
         x->p.g[G_GD_CH] = (float)(((int)x->p.g[G_GD_CH] + 1) % 16);
         ui_globalTouched(x, G_GD_CH);
@@ -541,6 +560,7 @@ int ui_led(Bl *x, int b)
     case B_D_TAP: return x->p.dlySync != 0;
     case B_GD_ON: return x->p.gdOn;
     case B_PR_SOUND: case B_PR_PERF: case B_PR_SAVE: case B_PR_LOAD: return preset_led(x, b);
+    case B_V_RESET: return x->p.mutes == 0xff;   /* lit while everything is muted */
     default:
         if (b >= B_MUTE1 && b <= B_MUTE8) return (x->p.mutes >> (b - B_MUTE1)) & 1;
         if (b >= B_SOLO1 && b <= B_SOLO8) return (x->p.solos >> (b - B_SOLO1)) & 1;

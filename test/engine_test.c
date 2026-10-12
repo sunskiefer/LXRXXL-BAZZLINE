@@ -296,6 +296,19 @@ int main(int argc, char **argv)
         }
     }
 
+    /* ---- VOICE RESET: the selected voice back to the default sound; SHIFT + it: MUTE ALL, again: all back */
+    {
+        set(in, "trk2", "1");
+        setf(in, "cutoff", 0.99f);
+        set(in, "v_reset", "1");
+        CHECK(fabsf(x->p.snd[1].v[SP_CUTOFF] - SOUND_DEFS[SP_CUTOFF].def) < 1e-6f, "VOICE RESET: track 2's cutoff back (%f)", x->p.snd[1].v[SP_CUTOFF]);
+        set(in, "shift", "1"); set(in, "v_reset", "1");
+        CHECK(x->p.mutes == 0xff, "SHIFT + VOICE RESET mutes every track (%02x)", x->p.mutes);
+        set(in, "shift", "1"); set(in, "v_reset", "1");
+        CHECK(x->p.mutes == 0, "and again: every track back (%02x)", x->p.mutes);
+        set(in, "trk1", "1");
+    }
+
     /* ---- presets: a sound and a performance saved to the storage and loaded back */
     {
         char dir[256], path[400], b[128] = "";

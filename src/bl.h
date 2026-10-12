@@ -201,6 +201,7 @@ enum { PR_NONE, PR_SAVE, PR_LOAD };
 /* bl.c */
 void bl_init(Bl *x);
 void bl_initProject(Project *p);
+void init_sound(Sound *s);                    /* the default sound (every control at its default) */
 void bl_factory(Bl *x);                       /* the factory project (factory.c), pattern A1, stopped */
 void bl_render(Bl *x, float *L, float *R, int n);
 float bl_tempo(Bl *x);                        /* the tempo in use (MPC's or the instance's own) */

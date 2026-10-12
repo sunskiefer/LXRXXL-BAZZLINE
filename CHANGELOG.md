@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7
+- PANEL: VOICE RESET, Suns Kiefer's orange button on its bezel under the TRACK keys: the selected track's sound back
+  to the default sound. SHIFT + VOICE RESET: MUTE ALL (every track muted and silenced; again: all back).
+
 ## 0.2.6
 - No Q-Link numbers on the screen: the pages are the artwork only (the order is in the README's Q-Link table).
 
