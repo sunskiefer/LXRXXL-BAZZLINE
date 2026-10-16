@@ -50,10 +50,10 @@ jobs:
           VERSION="${{ steps.ver.outputs.version }}"
           python3 third_party/mpc-vst-plugins/tools/release.py \
             --so build/arm/lxrxxl_bazzline.so \
-            --skin "build/package/ANDREALPHEUS - VST - LXRXXL BAZZLINE" \
+            --skin "build/package/L'Cronx - VST - LXRXXL BAZZLINE" \
             --entry build/pluginlist-entry.xml \
             --version "$VERSION" \
-            --about "LXRXXL BAZZLINE by ANDREALPHEUS: an 8-track bass synth, a variation of LXRXXL, for MPC OS" \
+            --about "LXRXXL BAZZLINE by L'Cronx: an 8-track bass synth, a variation of LXRXXL, for MPC OS" \
             --id lxrxxl-bazzline --repo sunskiefer/LXRXXL-BAZZLINE --license LicenseRef-LXR02-Open \
             -o dist
           # the LXR02 Open-Source license: a binary goes with its complete source, released beside it

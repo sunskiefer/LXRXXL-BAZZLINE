@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.9
+- Packed under **L'Cronx**: the plugin folder is now `L'Cronx - VST - LXRXXL BAZZLINE` and MPC lists the maker as L'Cronx. Nothing else
+  changed from 0.2.8. If you installed 0.2.8, run its `uninstall.sh` first (copy out anything you saved inside the plugin
+  folder), then install 0.2.9. The installer handles the ' in the folder name.
+
 ## 0.2.8
 - Tested on an Akai Force (MPC OS 3.9.1).
 - PANEL: the VOICE RESET button sits on its bezel exactly as in Suns Kiefer's artwork (it was 4 px off).

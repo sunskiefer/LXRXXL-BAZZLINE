@@ -274,11 +274,11 @@ ssh -t root@<device-ip> sh /tmp/LXRXXL-BAZZLINE-<version>/install.sh
 
 The installer:
 1. stops MPC (save first);
-2. copies the plugin to `/sdcard/Synths/ANDREALPHEUS - VST - LXRXXL BAZZLINE/`;
+2. copies the plugin to `/sdcard/Synths/L'Cronx - VST - LXRXXL BAZZLINE/`;
 3. adds it to MPC's plugin list;
 4. starts MPC again.
 
-Load **LXRXXL BAZZLINE** (ANDREALPHEUS) as a plugin instrument. `uninstall.sh` removes it. INSTALL.md in the zip has
+Load **LXRXXL BAZZLINE** (L'Cronx) as a plugin instrument. `uninstall.sh` removes it. INSTALL.md in the zip has
 the manual steps.
 
 ## Building

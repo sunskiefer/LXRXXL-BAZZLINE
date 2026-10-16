@@ -2,12 +2,12 @@
 # Build LXRXXL BAZZLINE for MPC OS (armv7-a hard-float, glibc <= 2.31 so it also loads on MPC OS 2.x).
 #   ./build.sh                     (MPC_VST=../mpc-vst-plugins to use another framework checkout)
 # Needs: python3 + Pillow, numpy and scipy, a host gcc (for shadow_art), and Zig (pip install ziglang). No Docker.
-# Output: build/package/ANDREALPHEUS - VST - LXRXXL BAZZLINE/  (skin + lxrxxl_bazzline.so)
+# Output: build/package/L'Cronx - VST - LXRXXL BAZZLINE/  (skin + lxrxxl_bazzline.so)
 set -euo pipefail
 cd "$(dirname "$0")"
 MPC_VST="${MPC_VST:-$PWD/third_party/mpc-vst-plugins}"
 ZIG="${ZIG:-python3 -m ziglang}"
-NAME="ANDREALPHEUS - VST - LXRXXL BAZZLINE"
+NAME="L'Cronx - VST - LXRXXL BAZZLINE"
 . ./build_srcs.sh
 python3 tools/gen_params.py
 python3 tools/panel.py --check
