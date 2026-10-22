@@ -86,8 +86,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for v in $(python3 -c "import json; print(' '.join(sorted({e['version'] for e in json.load(open('tested.json'))})))"); do
+          # numeric order (0.2.10 after 0.2.8), so the newest tested version is the one marked Latest below
+          VS=$(python3 -c "import json; print(' '.join(sorted({e['version'] for e in json.load(open('tested.json'))}, key=lambda v: tuple(int(x) for x in v.split('.')))))")
+          for v in $VS; do
             if [ "$(gh release view "v$v" --json isPrerelease -q .isPrerelease 2>/dev/null)" = "true" ]; then
               gh release edit "v$v" --prerelease=false --notes-file .github/RELEASE_NOTES.md && echo "v$v: now a full release"
             fi
           done
+          top=${VS##* }
+          if [ -n "$top" ] && gh release view "v$top" >/dev/null 2>&1; then
+            gh release edit "v$top" --latest && echo "v$top: marked Latest"
+          fi
